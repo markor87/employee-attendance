@@ -105,6 +105,11 @@ class Setting extends Model
             return $value;
         }
 
+        // Convert string to lowercase for proper boolean parsing
+        if (is_string($value)) {
+            $value = strtolower(trim($value));
+        }
+
         return filter_var($value, FILTER_VALIDATE_BOOLEAN);
     }
 

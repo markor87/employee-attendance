@@ -262,26 +262,15 @@ const isActive = (path) => {
     return window.location.pathname === path;
 };
 
-const logout = async () => {
-    try {
-        const response = await fetch('/logout', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            },
-        });
-
-        if (response.ok) {
+const logout = () => {
+    router.post('/logout', {}, {
+        onSuccess: () => {
             toast.success('Успешно сте се одјавили.');
-            router.visit('/login');
-        } else {
+        },
+        onError: () => {
             toast.error('Дошло је до грешке приликом одјављивања.');
-        }
-    } catch (error) {
-        console.error('Logout error:', error);
-        toast.error('Дошло је до грешке приликом одјављивања.');
-    }
+        },
+    });
 };
 
 // Close dropdowns when clicking outside

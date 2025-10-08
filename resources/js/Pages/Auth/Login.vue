@@ -31,11 +31,11 @@
                             autocomplete="email"
                             required
                             class="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                            :class="{ 'border-red-500': errors.email }"
+                            :class="{ 'border-red-500': form.errors.email }"
                             placeholder="vas.email@primer.com"
                         />
-                        <p v-if="errors.email" class="mt-1 text-sm text-red-600">
-                            {{ errors.email }}
+                        <p v-if="form.errors.email" class="mt-1 text-sm text-red-600">
+                            {{ form.errors.email }}
                         </p>
                     </div>
 
@@ -52,7 +52,7 @@
                                 autocomplete="current-password"
                                 required
                                 class="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all pr-12"
-                                :class="{ 'border-red-500': errors.password }"
+                                :class="{ 'border-red-500': form.errors.password }"
                                 placeholder="••••••••"
                             />
                             <button
@@ -69,8 +69,8 @@
                                 </svg>
                             </button>
                         </div>
-                        <p v-if="errors.password" class="mt-1 text-sm text-red-600">
-                            {{ errors.password }}
+                        <p v-if="form.errors.password" class="mt-1 text-sm text-red-600">
+                            {{ form.errors.password }}
                         </p>
                     </div>
 
@@ -91,10 +91,10 @@
                     <div>
                         <button
                             type="submit"
-                            :disabled="loading"
+                            :disabled="form.processing"
                             class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl"
                         >
-                            <span v-if="!loading">Пријави се</span>
+                            <span v-if="!form.processing">Пријави се</span>
                             <span v-else class="flex items-center">
                                 <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -117,76 +117,52 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { router } from '@inertiajs/vue3';
+import { useForm } from '@inertiajs/vue3';
 import { useToast } from 'vue-toastification';
 
 const toast = useToast();
 
-const form = ref({
+const showPassword = ref(false);
+
+// Use Inertia's useForm helper - it handles CSRF automatically
+const form = useForm({
     email: '',
     password: '',
     remember_email: false,
 });
 
-const errors = ref({});
-const loading = ref(false);
-const showPassword = ref(false);
-
 // Load saved email if exists
 onMounted(() => {
     const savedEmail = localStorage.getItem('remembered_email');
     if (savedEmail) {
-        form.value.email = savedEmail;
-        form.value.remember_email = true;
+        form.email = savedEmail;
+        form.remember_email = true;
     }
 });
 
-const submitLogin = async () => {
-    loading.value = true;
-    errors.value = {};
-
-    try {
-        const response = await fetch('/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            },
-            body: JSON.stringify(form.value),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            // Handle validation errors
-            if (data.errors) {
-                errors.value = data.errors;
-            } else if (data.message) {
-                toast.error(data.message);
-            }
-            loading.value = false;
-            return;
-        }
-
-        // Save or clear email based on checkbox
-        if (form.value.remember_email) {
-            localStorage.setItem('remembered_email', form.value.email);
-        } else {
-            localStorage.removeItem('remembered_email');
-        }
-
-        // Check if 2FA is required
-        if (data.requires_2fa) {
-            toast.success(data.message);
-            router.visit('/2fa');
-        } else {
-            toast.success('Успешно сте се пријавили!');
-            router.visit(data.redirect);
-        }
-    } catch (error) {
-        console.error('Login error:', error);
-        toast.error('Дошло је до грешке приликом пријављивања.');
-        loading.value = false;
+const submitLogin = () => {
+    // Save or clear email based on checkbox
+    if (form.remember_email) {
+        localStorage.setItem('remembered_email', form.email);
+    } else {
+        localStorage.removeItem('remembered_email');
     }
+
+    // Inertia form.post() handles CSRF automatically
+    form.post('/login', {
+        preserveScroll: true,
+        onError: (errors) => {
+            // Handle validation errors
+            if (errors.email) {
+                toast.error(errors.email);
+            } else if (errors.password) {
+                toast.error(errors.password);
+            } else if (errors.message) {
+                toast.error(errors.message);
+            } else {
+                toast.error('Дошло је до грешке приликом пријављивања.');
+            }
+        },
+    });
 };
 </script>

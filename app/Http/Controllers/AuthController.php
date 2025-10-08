@@ -35,56 +35,69 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required|string',
-            'remember_email' => 'boolean',
-        ]);
+        try {
+            $request->validate([
+                'email' => 'required|email',
+                'password' => 'required|string',
+                'remember_email' => 'boolean',
+            ]);
 
-        // Find user by email
-        $user = User::where('Email', $request->email)->first();
+            // Find user by email
+            $user = User::where('Email', $request->email)->first();
 
-        if (!$user) {
-            throw ValidationException::withMessages([
-                'email' => 'Корисник са овим email-ом не постоји.',
+            if (!$user) {
+                throw ValidationException::withMessages([
+                    'email' => 'Корисник са овим email-ом не постоји.',
+                ]);
+            }
+
+            // Verify password
+            if (!$user->verifyPassword($request->password)) {
+                throw ValidationException::withMessages([
+                    'password' => 'Лозинка није исправна.',
+                ]);
+            }
+
+            // Check if 2FA is enabled
+            $twoFactorEnabled = Setting::isTwoFactorEnabled();
+
+            if ($twoFactorEnabled) {
+                // Generate and send 2FA code
+                $code = $this->twoFactorService->generateCode();
+                $this->twoFactorService->storeCode($code, $user->UserID);
+
+                // Send email
+                $this->emailService->send2FACode(
+                    $user->Email,
+                    $code,
+                    $user->FullName
+                );
+
+                // Redirect to 2FA page with success message
+                return redirect()->route('2fa.show')->with('message', '2FA код је послат на ваш email.');
+            }
+
+            // Login user directly (no 2FA)
+            $this->loginUser($user);
+
+            // Redirect to appropriate dashboard
+            return redirect($this->getRedirectPath($user));
+        } catch (ValidationException $e) {
+            // Re-throw validation exceptions
+            throw $e;
+        } catch (\Exception $e) {
+            // Log unexpected errors
+            \Log::error('Login error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'email' => $request->email,
+            ]);
+
+            // Return back with error
+            return back()->withErrors([
+                'message' => 'Дошло је до грешке приликом пријављивања. Покушајте поново.',
             ]);
         }
-
-        // Verify password
-        if (!$user->verifyPassword($request->password)) {
-            throw ValidationException::withMessages([
-                'password' => 'Лозинка није исправна.',
-            ]);
-        }
-
-        // Check if 2FA is enabled
-        $twoFactorEnabled = Setting::isTwoFactorEnabled();
-
-        if ($twoFactorEnabled) {
-            // Generate and send 2FA code
-            $code = $this->twoFactorService->generateCode();
-            $this->twoFactorService->storeCode($code, $user->UserID);
-
-            // Send email
-            $this->emailService->send2FACode(
-                $user->Email,
-                $code,
-                $user->FullName
-            );
-
-            return response()->json([
-                'requires_2fa' => true,
-                'message' => '2FA код је послат на ваш email.',
-            ]);
-        }
-
-        // Login user directly (no 2FA)
-        $this->loginUser($user);
-
-        return response()->json([
-            'requires_2fa' => false,
-            'redirect' => $this->getRedirectPath($user),
-        ]);
     }
 
     /**
@@ -92,7 +105,7 @@ class AuthController extends Controller
      */
     protected function loginUser(User $user)
     {
-        Auth::login($user, true);
+        Auth::login($user, false);
 
         // Clear 2FA session data
         $this->twoFactorService->clearAll();

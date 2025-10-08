@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\LogsController;
 use App\Models\User;
 use App\Models\TimeLog;
 use App\Models\Setting;
@@ -45,6 +46,12 @@ Route::middleware('auth')->group(function () {
     // Force Attendance (Admin/Kadrovik only)
     Route::post('/attendance/force-check-in', [AttendanceController::class, 'forceCheckIn'])->name('attendance.force.checkin');
     Route::post('/attendance/force-check-out', [AttendanceController::class, 'forceCheckOut'])->name('attendance.force.checkout');
+
+    // Logs (User can view own logs, Admin/Kadrovik can view any user's logs)
+    Route::get('/logs/{userId}', [LogsController::class, 'show'])->name('logs.show');
+
+    // Admin Logs (Admin/Kadrovik only - view all logs)
+    Route::get('/admin/logs', [LogsController::class, 'index'])->name('admin.logs');
 
     // User Dashboard (main dashboard for all users)
     Route::get('/dashboard', function () {
