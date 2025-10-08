@@ -86,13 +86,14 @@ class User extends Authenticatable
 
     /**
      * Verify password using bcrypt.
+     * Uses password_verify() to accept both $2a$ and $2y$ bcrypt variants.
      *
      * @param string $password
      * @return bool
      */
     public function verifyPassword(string $password): bool
     {
-        return Hash::check($password, $this->PasswordHash);
+        return password_verify($password, $this->PasswordHash);
     }
 
     /**
