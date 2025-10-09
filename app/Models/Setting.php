@@ -64,7 +64,10 @@ class Setting extends Model
      */
     public static function get(string $key, $default = null)
     {
-        return Cache::remember("setting.{$key}", 3600, function () use ($key, $default) {
+        // Use shorter cache for critical settings like TwoFactorEnabled
+        $cacheDuration = in_array($key, ['TwoFactorEnabled', 'AutoLogoutEnabled']) ? 60 : 3600;
+
+        return Cache::remember("setting.{$key}", $cacheDuration, function () use ($key, $default) {
             $setting = static::find($key);
             return $setting ? $setting->SettingValue : $default;
         });
@@ -156,7 +159,7 @@ class Setting extends Model
      */
     public static function isTwoFactorEnabled(): bool
     {
-        return static::getBool('TwoFactorEnabled', true);
+        return static::getBool('TwoFactorEnabled', false);
     }
 
     /**

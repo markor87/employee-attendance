@@ -111,7 +111,7 @@
         <teleport to="body">
             <div
                 v-if="showCheckInModal"
-                class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+                class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
                 @click.self="showCheckInModal = false"
             >
                 <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
@@ -168,7 +168,7 @@
         <teleport to="body">
             <div
                 v-if="showCheckOutModal"
-                class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+                class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
                 @click.self="showCheckOutModal = false"
             >
                 <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
@@ -339,77 +339,51 @@ const openCheckOutModal = () => {
     showCheckOutModal.value = true;
 };
 
-const submitCheckIn = async () => {
+const submitCheckIn = () => {
     submitting.value = true;
 
-    try {
-        const response = await fetch('/attendance/check-in', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            },
-            body: JSON.stringify({
-                reason: checkInForm.value.reason,
-                notes: checkInForm.value.notes,
-            }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            toast.error(data.message || 'Грешка приликом пријављивања.');
+    router.post('/attendance/check-in', {
+        reason: checkInForm.value.reason,
+        notes: checkInForm.value.notes,
+    }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            toast.success('Успешно сте се пријавили на посао!');
+            showCheckInModal.value = false;
             submitting.value = false;
-            return;
-        }
-
-        toast.success('Успешно сте се пријавили на посао!');
-        showCheckInModal.value = false;
-        submitting.value = false;
-
-        // Reload page to update status
-        router.reload();
-    } catch (error) {
-        console.error('Check-in error:', error);
-        toast.error('Дошло је до грешке приликом пријављивања.');
-        submitting.value = false;
-    }
+            router.reload();
+        },
+        onError: (errors) => {
+            toast.error(errors.message || 'Грешка приликом пријављивања.');
+            submitting.value = false;
+        },
+        onFinish: () => {
+            submitting.value = false;
+        },
+    });
 };
 
-const submitCheckOut = async () => {
+const submitCheckOut = () => {
     submitting.value = true;
 
-    try {
-        const response = await fetch('/attendance/check-out', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            },
-            body: JSON.stringify({
-                reason: checkOutForm.value.reason,
-                notes: checkOutForm.value.notes,
-            }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            toast.error(data.message || 'Грешка приликом одјављивања.');
+    router.post('/attendance/check-out', {
+        reason: checkOutForm.value.reason,
+        notes: checkOutForm.value.notes,
+    }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            toast.success('Успешно сте се одјавили са посла!');
+            showCheckOutModal.value = false;
             submitting.value = false;
-            return;
-        }
-
-        toast.success('Успешно сте се одјавили са посла!');
-        showCheckOutModal.value = false;
-        submitting.value = false;
-
-        // Reload page to update status
-        router.reload();
-    } catch (error) {
-        console.error('Check-out error:', error);
-        toast.error('Дошло је до грешке приликом одјављивања.');
-        submitting.value = false;
-    }
+            router.reload();
+        },
+        onError: (errors) => {
+            toast.error(errors.message || 'Грешка приликом одјављивања.');
+            submitting.value = false;
+        },
+        onFinish: () => {
+            submitting.value = false;
+        },
+    });
 };
 </script>

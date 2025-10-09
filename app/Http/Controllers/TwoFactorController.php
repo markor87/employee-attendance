@@ -47,8 +47,11 @@ class TwoFactorController extends Controller
             'code' => 'required|string|size:6',
         ]);
 
+        // Trim whitespace from code
+        $code = trim($request->code);
+
         // Verify code
-        if (!$this->twoFactorService->verifyCode($request->code)) {
+        if (!$this->twoFactorService->verifyCode($code)) {
             throw ValidationException::withMessages([
                 'code' => 'Неисправан или истекао 2FA код.',
             ]);

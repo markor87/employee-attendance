@@ -208,38 +208,29 @@ const isFormValid = computed(() => {
            /[@$!%*#?&]/.test(form.value.new_password);
 });
 
-const submitChangePassword = async () => {
+const submitChangePassword = () => {
     loading.value = true;
     errors.value = {};
 
-    try {
-        const response = await fetch('/password/change', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            },
-            body: JSON.stringify(form.value),
-        });
+    router.post('/password/change', form.value, {
+        preserveScroll: true,
+        onSuccess: () => {
+            toast.success('Лозинка је успешно промењена.');
+        },
+        onError: (pageErrors) => {
+            errors.value = pageErrors;
 
-        const data = await response.json();
-
-        if (!response.ok) {
-            if (data.errors) {
-                errors.value = data.errors;
-            } else if (data.message) {
-                toast.error(data.message);
+            if (pageErrors.current_password) {
+                toast.error(pageErrors.current_password);
+            } else if (pageErrors.new_password) {
+                toast.error(pageErrors.new_password);
+            } else {
+                toast.error('Дошло је до грешке приликом промене лозинке.');
             }
+        },
+        onFinish: () => {
             loading.value = false;
-            return;
-        }
-
-        toast.success(data.message);
-        router.visit(data.redirect);
-    } catch (error) {
-        console.error('Change password error:', error);
-        toast.error('Дошло је до грешке приликом промене лозинке.');
-        loading.value = false;
-    }
+        },
+    });
 };
 </script>

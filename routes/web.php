@@ -6,6 +6,8 @@ use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\LogsController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\SettingsController;
 use App\Models\User;
 use App\Models\TimeLog;
 use App\Models\Setting;
@@ -24,6 +26,9 @@ Route::middleware('guest')->group(function () {
     Route::post('/2fa/resend', [TwoFactorController::class, 'resend'])->name('2fa.resend');
 });
 
+// Attendance Status - Outside auth middleware to return proper 401 when session expired
+Route::get('/attendance/status', [AttendanceController::class, 'status'])->name('attendance.status');
+
 // Authenticated Routes
 Route::middleware('auth')->group(function () {
     // Logout
@@ -41,7 +46,6 @@ Route::middleware('auth')->group(function () {
     // Attendance System
     Route::post('/attendance/check-in', [AttendanceController::class, 'checkIn'])->name('attendance.checkin');
     Route::post('/attendance/check-out', [AttendanceController::class, 'checkOut'])->name('attendance.checkout');
-    Route::get('/attendance/status', [AttendanceController::class, 'status'])->name('attendance.status');
 
     // Force Attendance (Admin/Kadrovik only)
     Route::post('/attendance/force-check-in', [AttendanceController::class, 'forceCheckIn'])->name('attendance.force.checkin');
@@ -52,6 +56,22 @@ Route::middleware('auth')->group(function () {
 
     // Admin Logs (Admin/Kadrovik only - view all logs)
     Route::get('/admin/logs', [LogsController::class, 'index'])->name('admin.logs');
+
+    // User Management (SuperAdmin/Admin only)
+    Route::middleware('role:SuperAdmin|Admin')->group(function () {
+        Route::get('/users', [UserController::class, 'index'])->name('users.index');
+        Route::post('/users', [UserController::class, 'store'])->name('users.store');
+        Route::put('/users/{id}', [UserController::class, 'update'])->name('users.update');
+        Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
+        Route::post('/users/{id}/force-password-change', [UserController::class, 'forcePasswordChange'])->name('users.forcePasswordChange');
+    });
+
+    // Settings (SuperAdmin only)
+    Route::middleware('role:SuperAdmin')->group(function () {
+        Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+        Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update');
+        Route::post('/settings/test-email', [SettingsController::class, 'testEmail'])->name('settings.testEmail');
+    });
 
     // User Dashboard (main dashboard for all users)
     Route::get('/dashboard', function () {
@@ -109,11 +129,24 @@ Route::middleware('auth')->group(function () {
         $totalLogs = TimeLog::count();
         $todayCheckins = TimeLog::whereDate('VremePrijave', today())->count();
 
-        // Get recent logs (last 10)
-        $recentLogs = TimeLog::with(['user'])
-            ->latest('VremePrijave')
-            ->take(10)
-            ->get();
+        // Build users query with search
+        $query = User::query();
+
+        // Search filter
+        if (request('search')) {
+            $search = request('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('FirstName', 'like', "%{$search}%")
+                  ->orWhere('LastName', 'like', "%{$search}%")
+                  ->orWhere('Email', 'like', "%{$search}%");
+            });
+        }
+
+        // Get paginated users (10 per page)
+        $users = $query->orderBy('FirstName')
+            ->orderBy('LastName')
+            ->paginate(10)
+            ->withQueryString();
 
         return inertia('Dashboard/Admin', [
             'user' => [
@@ -131,7 +164,10 @@ Route::middleware('auth')->group(function () {
                 'total_logs' => $totalLogs,
                 'today_checkins' => $todayCheckins,
             ],
-            'recentLogs' => $recentLogs,
+            'users' => $users,
+            'filters' => [
+                'search' => request('search'),
+            ],
             'laravelVersion' => app()->version(),
         ]);
     })->name('admin.dashboard');

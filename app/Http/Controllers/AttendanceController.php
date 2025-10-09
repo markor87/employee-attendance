@@ -23,10 +23,9 @@ class AttendanceController extends Controller
 
         // Validate user is not already checked in
         if ($user->Status === 'Prijavljen') {
-            return response()->json([
-                'success' => false,
+            return back()->withErrors([
                 'message' => 'Већ сте пријављени на посао.',
-            ], 400);
+            ]);
         }
 
         // Validate input
@@ -58,22 +57,13 @@ class AttendanceController extends Controller
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Успешно сте се пријавили на посао.',
-                'data' => [
-                    'log' => $timeLog,
-                    'status' => 'Prijavljen',
-                ],
-            ]);
+            return back()->with('success', 'Успешно сте се пријавили на посао.');
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return response()->json([
-                'success' => false,
+            return back()->withErrors([
                 'message' => 'Дошло је до грешке приликом пријављивања.',
-                'error' => $e->getMessage(),
-            ], 500);
+            ]);
         }
     }
 
@@ -89,10 +79,9 @@ class AttendanceController extends Controller
 
         // Validate user is checked in
         if ($user->Status === 'Odjavljen') {
-            return response()->json([
-                'success' => false,
+            return back()->withErrors([
                 'message' => 'Нисте пријављени на посао.',
-            ], 400);
+            ]);
         }
 
         // Find active (open) time log for this user
@@ -102,10 +91,9 @@ class AttendanceController extends Controller
             ->first();
 
         if (!$timeLog) {
-            return response()->json([
-                'success' => false,
+            return back()->withErrors([
                 'message' => 'Није пронађен активан лог пријаве.',
-            ], 400);
+            ]);
         }
 
         // Validate input
@@ -139,22 +127,13 @@ class AttendanceController extends Controller
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Успешно сте се одјавили са посла.',
-                'data' => [
-                    'log' => $timeLog,
-                    'status' => 'Odjavljen',
-                ],
-            ]);
+            return back()->with('success', 'Успешно сте се одјавили са посла.');
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return response()->json([
-                'success' => false,
+            return back()->withErrors([
                 'message' => 'Дошло је до грешке приликом одјављивања.',
-                'error' => $e->getMessage(),
-            ], 500);
+            ]);
         }
     }
 
@@ -166,6 +145,11 @@ class AttendanceController extends Controller
     public function status()
     {
         $user = Auth::user();
+
+        // If user is not authenticated (session expired), return 401
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
 
         // Get active log if exists
         $activeLog = TimeLog::where('UserID', $user->UserID)

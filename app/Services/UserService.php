@@ -53,7 +53,7 @@ class UserService
                     'string',
                     'min:8',
                     'regex:/[0-9]/',      // At least one digit
-                    'regex:/[@$!%*#?&]/', // At least one special char
+                    'regex:/[!@#$%^&*()_+\-=\[\]{};:\\\'"|,.<>\/?]/', // At least one special char
                 ],
             ],
             [

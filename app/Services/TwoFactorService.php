@@ -65,27 +65,47 @@ class TwoFactorService
      */
     public function verifyCode(string $code): bool
     {
+        // Trim whitespace from input code
+        $code = trim($code);
+
         $storedCode = Session::get(self::CODE_KEY);
         $expiry = Session::get(self::EXPIRY_KEY);
 
+        // Log for debugging
+        \Log::info("2FA verification attempt", [
+            'received_code' => $code,
+            'received_length' => strlen($code),
+            'stored_code' => $storedCode,
+            'stored_length' => $storedCode ? strlen($storedCode) : 0,
+            'has_expiry' => !empty($expiry),
+            'expiry' => $expiry,
+        ]);
+
         // Check if code exists
         if (!$storedCode || !$expiry) {
+            \Log::warning("2FA verification failed: No code or expiry in session");
             return false;
         }
 
         // Check if code expired
         if (Carbon::parse($expiry)->isPast()) {
+            \Log::warning("2FA verification failed: Code expired");
             $this->clearCode();
             return false;
         }
 
         // Check if code matches
         if ($code !== $storedCode) {
+            \Log::warning("2FA verification failed: Code mismatch", [
+                'received' => $code,
+                'expected' => $storedCode,
+            ]);
             return false;
         }
 
         // Mark as verified
         Session::put(self::VERIFIED_KEY, true);
+        \Log::info("2FA verification successful");
 
         return true;
     }

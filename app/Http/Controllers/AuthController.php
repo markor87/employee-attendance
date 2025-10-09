@@ -58,7 +58,8 @@ class AuthController extends Controller
                 ]);
             }
 
-            // Check if 2FA is enabled
+            // Check if 2FA is enabled (force cache refresh)
+            \Cache::forget('setting.TwoFactorEnabled');
             $twoFactorEnabled = Setting::isTwoFactorEnabled();
 
             if ($twoFactorEnabled) {

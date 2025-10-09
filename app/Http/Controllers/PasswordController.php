@@ -71,11 +71,7 @@ class PasswordController extends Controller
         $user->DateUpdated = now();
         $user->save();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Лозинка је успешно промењена.',
-            'redirect' => '/dashboard',
-        ]);
+        return redirect('/dashboard')->with('success', 'Лозинка је успешно промењена.');
     }
 
     /**
@@ -113,9 +109,9 @@ class PasswordController extends Controller
 
         // Verify PasswordNeedsChange flag is set
         if (!$user->PasswordNeedsChange) {
-            return response()->json([
+            return back()->withErrors([
                 'error' => 'Промена лозинке није потребна.',
-            ], 400);
+            ]);
         }
 
         // Validate password strength
@@ -133,10 +129,6 @@ class PasswordController extends Controller
         $user->DateUpdated = now();
         $user->save();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Лозинка је успешно постављена.',
-            'redirect' => '/dashboard',
-        ]);
+        return redirect('/dashboard')->with('success', 'Лозинка је успешно постављена.');
     }
 }

@@ -144,26 +144,34 @@
                         <!-- My Logs -->
                         <a
                             :href="`/logs/${user.UserID}`"
-                            class="flex items-center px-4 py-3 text-sm font-medium rounded-lg text-gray-400 cursor-not-allowed"
+                            :class="[
+                                'flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors',
+                                isActive(`/logs/${user.UserID}`)
+                                    ? 'bg-yellow-50 text-yellow-700'
+                                    : 'text-gray-700 hover:bg-gray-50'
+                            ]"
                         >
                             <svg class="h-5 w-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                             </svg>
                             Моји логови
-                            <span class="ml-auto text-xs bg-gray-100 px-2 py-1 rounded">Ускоро</span>
                         </a>
 
                         <!-- Users (Admin) -->
                         <a
                             v-if="user.isAdmin"
-                            href="#"
-                            class="flex items-center px-4 py-3 text-sm font-medium rounded-lg text-gray-400 cursor-not-allowed"
+                            href="/users"
+                            :class="[
+                                'flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors',
+                                isActive('/users')
+                                    ? 'bg-indigo-50 text-indigo-700'
+                                    : 'text-gray-700 hover:bg-gray-50'
+                            ]"
                         >
                             <svg class="h-5 w-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
                             </svg>
                             Корисници
-                            <span class="ml-auto text-xs bg-gray-100 px-2 py-1 rounded">Ускоро</span>
                         </a>
 
                         <!-- Reports (Admin/Kadrovik) -->
@@ -182,15 +190,19 @@
                         <!-- Settings (SuperAdmin only) -->
                         <a
                             v-if="user.Role === 'SuperAdmin'"
-                            href="#"
-                            class="flex items-center px-4 py-3 text-sm font-medium rounded-lg text-gray-400 cursor-not-allowed"
+                            href="/settings"
+                            :class="[
+                                'flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors',
+                                isActive('/settings')
+                                    ? 'bg-green-50 text-green-700'
+                                    : 'text-gray-700 hover:bg-gray-50'
+                            ]"
                         >
                             <svg class="h-5 w-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                             </svg>
                             Подешавања
-                            <span class="ml-auto text-xs bg-gray-100 px-2 py-1 rounded">Ускоро</span>
                         </a>
                     </nav>
 
@@ -233,7 +245,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { useToast } from 'vue-toastification';
 
@@ -251,6 +263,7 @@ const props = defineProps({
 const toast = useToast();
 const showUserMenu = ref(false);
 const showMobileMenu = ref(false);
+let heartbeatInterval = null;
 
 const userInitials = computed(() => {
     const first = props.user.FirstName?.[0] || '';
@@ -272,6 +285,43 @@ const logout = () => {
         },
     });
 };
+
+// Heartbeat check for auto-logout detection
+const checkAuthStatus = async () => {
+    try {
+        const response = await fetch('/attendance/status', {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            credentials: 'same-origin',
+        });
+
+        // If 401 or 419, user is logged out (session expired)
+        if (response.status === 401 || response.status === 419) {
+            console.log('Session expired detected via heartbeat, redirecting to login...');
+            clearInterval(heartbeatInterval);
+            window.location.href = '/login';
+        }
+    } catch (error) {
+        console.error('Heartbeat check error:', error);
+    }
+};
+
+// Start heartbeat on mount
+onMounted(() => {
+    // Check every 30 seconds
+    heartbeatInterval = setInterval(checkAuthStatus, 30000);
+    console.log('Auto-logout heartbeat started (30s interval)');
+});
+
+// Stop heartbeat on unmount
+onUnmounted(() => {
+    if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+        console.log('Auto-logout heartbeat stopped');
+    }
+});
 
 // Close dropdowns when clicking outside
 const handleClickOutside = (event) => {

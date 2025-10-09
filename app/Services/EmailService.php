@@ -48,13 +48,19 @@ class EmailService
         $settings = Setting::getEmailSettings();
 
         // Configure mail settings
+        Config::set('mail.default', 'smtp');
+        Config::set('mail.mailers.smtp.transport', 'smtp');
         Config::set('mail.mailers.smtp.host', $settings['smtp_host']);
         Config::set('mail.mailers.smtp.port', $settings['smtp_port']);
         Config::set('mail.mailers.smtp.encryption', $settings['enable_ssl'] ? 'tls' : null);
         Config::set('mail.mailers.smtp.username', $settings['from_address']);
         Config::set('mail.mailers.smtp.password', $settings['password']);
+        Config::set('mail.mailers.smtp.timeout', 30);
         Config::set('mail.from.address', $settings['from_address']);
         Config::set('mail.from.name', config('app.name'));
+
+        // Re-create mail manager to use new config
+        app()->forgetInstance('mail.manager');
     }
 
     /**

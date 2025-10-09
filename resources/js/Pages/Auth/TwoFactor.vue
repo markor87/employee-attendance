@@ -146,32 +146,69 @@ const submitVerification = async () => {
     loading.value = true;
     errors.value = {};
 
+    console.log('=== 2FA VERIFICATION DEBUG ===');
+    console.log('Code being sent:', code.value);
+    console.log('Code length:', code.value.length);
+
     try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        console.log('CSRF Token:', csrfToken ? 'Found' : 'NOT FOUND');
+
         const response = await fetch('/2fa/verify', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'X-CSRF-TOKEN': csrfToken,
             },
             body: JSON.stringify({ code: code.value }),
         });
 
-        const data = await response.json();
+        console.log('Response status:', response.status);
+        console.log('Response status text:', response.statusText);
+        console.log('Response headers:', [...response.headers.entries()]);
+
+        // Try to get response text first
+        const responseText = await response.text();
+        console.log('Response text:', responseText);
+
+        // Try to parse as JSON
+        let data;
+        try {
+            data = JSON.parse(responseText);
+            console.log('Parsed JSON data:', data);
+        } catch (parseError) {
+            console.error('JSON parse error:', parseError);
+            console.error('Could not parse response as JSON. Response was:', responseText);
+            toast.error('Сервер је вратио неисправан одговор.');
+            loading.value = false;
+            return;
+        }
 
         if (!response.ok) {
+            console.error('Response not OK. Status:', response.status);
             if (data.errors) {
+                console.error('Validation errors:', data.errors);
                 errors.value = data.errors;
             } else if (data.error) {
+                console.error('Error message:', data.error);
                 toast.error(data.error);
+            } else {
+                console.error('Unknown error format:', data);
+                toast.error('Дошло је до грешке приликом верификације.');
             }
             loading.value = false;
             return;
         }
 
+        console.log('Verification successful! Redirecting to:', data.redirect);
         toast.success('Верификација успешна!');
         router.visit(data.redirect);
     } catch (error) {
-        console.error('Verification error:', error);
+        console.error('=== VERIFICATION EXCEPTION ===');
+        console.error('Error type:', error.constructor.name);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        console.error('Full error object:', error);
         toast.error('Дошло је до грешке приликом верификације.');
         loading.value = false;
     }

@@ -41,17 +41,21 @@
             />
         </div>
 
-        <!-- Recent Activity -->
+        <!-- Users Table -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200">
             <div class="px-6 py-4 border-b border-gray-200">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-semibold text-gray-900">Недавна активност</h3>
-                    <button
-                        class="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
-                        disabled
-                    >
-                        Погледај све
-                    </button>
+                <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-900">Сви корисници</h3>
+                    <!-- Search -->
+                    <div class="w-full md:w-96">
+                        <input
+                            v-model="searchQuery"
+                            type="text"
+                            placeholder="Претражи по имену, презимену или email-у..."
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            @input="handleSearch"
+                        />
+                    </div>
                 </div>
             </div>
 
@@ -63,163 +67,110 @@
                                 Корисник
                             </th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Време пријаве
+                                Email
                             </th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Време одјаве
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Разлог
+                                Улога
                             </th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Статус
                             </th>
+                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Акције
+                            </th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
-                        <tr v-if="recentLogs.length === 0">
+                        <tr v-if="users.data.length === 0">
                             <td colspan="5" class="px-6 py-8 text-center text-sm text-gray-500">
-                                <svg class="mx-auto h-12 w-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                <svg class="h-12 w-12 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
                                 </svg>
-                                <p class="font-medium">Нема недавне активности</p>
-                                <p class="text-xs mt-1">Пријаве и одјаве ће се приказати овде</p>
+                                <p class="font-medium">Нема корисника</p>
+                                <p class="text-xs mt-1">Покушајте другу претрагу</p>
                             </td>
                         </tr>
-                        <tr v-for="log in recentLogs" :key="log.LogID" class="hover:bg-gray-50 transition-colors">
+                        <tr v-for="user in users.data" :key="user.UserID" class="hover:bg-gray-50 transition-colors">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
                                     <div class="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
-                                        {{ getUserInitials(log.user) }}
+                                        {{ getUserInitials(user) }}
                                     </div>
                                     <div class="ml-4">
                                         <div class="text-sm font-medium text-gray-900">
-                                            {{ log.user?.FirstName }} {{ log.user?.LastName }}
-                                        </div>
-                                        <div class="text-xs text-gray-500">
-                                            {{ log.user?.Email }}
+                                            {{ user.FirstName }} {{ user.LastName }}
                                         </div>
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {{ formatDateTime(log.VremePrijave) }}
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ user.Email }}</div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                <span v-if="log.VremeOdjave">{{ formatDateTime(log.VremeOdjave) }}</span>
-                                <span v-else class="text-gray-400 italic">-</span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {{ log.reason?.Description || 'N/A' }}
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span :class="getRoleBadgeClass(user.Role)" class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full">
+                                    {{ user.Role }}
+                                </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span
                                     :class="[
                                         'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                                        log.VremeOdjave
-                                            ? 'bg-gray-100 text-gray-800'
-                                            : 'bg-green-100 text-green-800'
+                                        user.Status === 'Prijavljen'
+                                            ? 'bg-green-100 text-green-800'
+                                            : 'bg-gray-100 text-gray-800'
                                     ]"
                                 >
                                     <svg
                                         :class="[
                                             'mr-1.5 h-2 w-2',
-                                            log.VremeOdjave ? '' : 'animate-pulse'
+                                            user.Status === 'Prijavljen' ? 'animate-pulse' : ''
                                         ]"
                                         fill="currentColor"
                                         viewBox="0 0 8 8"
                                     >
                                         <circle cx="4" cy="4" r="3" />
                                     </svg>
-                                    {{ log.VremeOdjave ? 'Одјављен' : 'Пријављен' }}
+                                    {{ user.Status === 'Prijavljen' ? 'Пријављен' : 'Одјављен' }}
                                 </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <a
+                                    :href="`/logs/${user.UserID}`"
+                                    class="inline-flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-md transition-colors"
+                                >
+                                    <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    Логови
+                                </a>
                             </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
 
-            <!-- Pagination or Load More (Future) -->
-            <div v-if="recentLogs.length > 0" class="px-6 py-4 bg-gray-50 border-t border-gray-200">
-                <p class="text-xs text-gray-500 text-center">
-                    Приказано {{ recentLogs.length }} најновијих активности
-                </p>
-            </div>
-        </div>
-
-        <!-- Quick Info Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-            <!-- Your Status Card -->
-            <div class="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg border border-blue-200 p-6">
-                <div class="flex items-start justify-between mb-4">
-                    <div>
-                        <h3 class="text-lg font-semibold text-gray-900">Ваш статус</h3>
-                        <p class="text-sm text-gray-600 mt-1">Тренутни статус присуства</p>
-                    </div>
-                    <div class="h-12 w-12 rounded-lg bg-white shadow-sm flex items-center justify-center">
-                        <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                        </svg>
-                    </div>
+            <!-- Pagination -->
+            <div v-if="users.last_page > 1" class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+                <div class="text-sm text-gray-700">
+                    Приказано {{ users.from || 0 }}-{{ users.to || 0 }} од {{ users.total }} корисника
                 </div>
-                <div class="flex items-center space-x-2">
-                    <span
+                <div class="flex space-x-2">
+                    <button
+                        v-for="page in paginationPages"
+                        :key="page"
+                        @click="goToPage(page)"
+                        :disabled="page === users.current_page || page === '...'"
                         :class="[
-                            'inline-flex items-center px-3 py-1 rounded-full text-sm font-medium',
-                            user.Status === 'Prijavljen'
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-gray-100 text-gray-800'
+                            'px-3 py-1 text-sm font-medium rounded-lg transition-colors',
+                            page === users.current_page
+                                ? 'bg-blue-600 text-white'
+                                : page === '...'
+                                ? 'text-gray-400 cursor-default'
+                                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                         ]"
                     >
-                        <svg
-                            :class="[
-                                'mr-2 h-2.5 w-2.5',
-                                user.Status === 'Prijavljen' ? 'animate-pulse' : ''
-                            ]"
-                            fill="currentColor"
-                            viewBox="0 0 8 8"
-                        >
-                            <circle cx="4" cy="4" r="3" />
-                        </svg>
-                        {{ user.Status === 'Prijavljen' ? 'Тренутно пријављен' : 'Одјављен' }}
-                    </span>
-                </div>
-                <p class="text-xs text-gray-500 mt-3">
-                    Користите дугме за пријаву/одјаву у панелу са леве стране.
-                </p>
-            </div>
-
-            <!-- System Info Card -->
-            <div class="bg-gradient-to-br from-green-50 to-teal-50 rounded-lg border border-green-200 p-6">
-                <div class="flex items-start justify-between mb-4">
-                    <div>
-                        <h3 class="text-lg font-semibold text-gray-900">Информације о систему</h3>
-                        <p class="text-sm text-gray-600 mt-1">Верзија и статус</p>
-                    </div>
-                    <div class="h-12 w-12 rounded-lg bg-white shadow-sm flex items-center justify-center">
-                        <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                        </svg>
-                    </div>
-                </div>
-                <div class="space-y-2">
-                    <div class="flex items-center justify-between text-sm">
-                        <span class="text-gray-600">Верзија:</span>
-                        <span class="font-medium text-gray-900">1.0.0</span>
-                    </div>
-                    <div class="flex items-center justify-between text-sm">
-                        <span class="text-gray-600">Laravel:</span>
-                        <span class="font-medium text-gray-900">{{ laravelVersion }}</span>
-                    </div>
-                    <div class="flex items-center justify-between text-sm">
-                        <span class="text-gray-600">Статус:</span>
-                        <span class="inline-flex items-center text-green-600 font-medium">
-                            <svg class="mr-1 h-2 w-2 animate-pulse" fill="currentColor" viewBox="0 0 8 8">
-                                <circle cx="4" cy="4" r="3" />
-                            </svg>
-                            Online
-                        </span>
-                    </div>
+                        {{ page }}
+                    </button>
                 </div>
             </div>
         </div>
@@ -227,7 +178,8 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { ref, computed } from 'vue';
+import { router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import StatsCard from '@/Components/StatsCard.vue';
 
@@ -240,15 +192,21 @@ const props = defineProps({
         type: Object,
         required: true,
     },
-    recentLogs: {
-        type: Array,
-        default: () => [],
+    users: {
+        type: Object,
+        required: true,
+    },
+    filters: {
+        type: Object,
+        default: () => ({}),
     },
     laravelVersion: {
         type: String,
         default: '11.x',
     },
 });
+
+const searchQuery = ref(props.filters.search || '');
 
 const checkedInPercentage = computed(() => {
     if (props.stats.total_users === 0) return 0;
@@ -262,15 +220,73 @@ const getUserInitials = (user) => {
     return (first + last).toUpperCase();
 };
 
-const formatDateTime = (dateTime) => {
-    if (!dateTime) return '-';
-    const date = new Date(dateTime);
-    return date.toLocaleString('sr-RS', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
+const getRoleBadgeClass = (role) => {
+    const classes = {
+        'SuperAdmin': 'bg-red-100 text-red-800',
+        'Admin': 'bg-purple-100 text-purple-800',
+        'Kadrovik': 'bg-blue-100 text-blue-800',
+        'Zaposleni': 'bg-gray-100 text-gray-800',
+    };
+    return classes[role] || 'bg-gray-100 text-gray-800';
+};
+
+let searchTimeout = null;
+const handleSearch = () => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        router.get('/admin/dashboard', {
+            search: searchQuery.value || undefined,
+        }, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    }, 300);
+};
+
+const goToPage = (page) => {
+    if (page === '...') return;
+
+    router.get('/admin/dashboard', {
+        page: page,
+        search: searchQuery.value || undefined,
+    }, {
+        preserveState: true,
+        preserveScroll: true,
     });
 };
+
+// Pagination with boundary checks
+const paginationPages = computed(() => {
+    const current = props.users.current_page;
+    const last = props.users.last_page;
+    const pages = [];
+
+    if (last <= 7) {
+        // Show all pages if 7 or fewer
+        for (let i = 1; i <= last; i++) {
+            pages.push(i);
+        }
+    } else {
+        // Always show first page
+        pages.push(1);
+
+        if (current > 3) {
+            pages.push('...');
+        }
+
+        // Show pages around current
+        for (let i = Math.max(2, current - 1); i <= Math.min(last - 1, current + 1); i++) {
+            pages.push(i);
+        }
+
+        if (current < last - 2) {
+            pages.push('...');
+        }
+
+        // Always show last page
+        pages.push(last);
+    }
+
+    return pages;
+});
 </script>
