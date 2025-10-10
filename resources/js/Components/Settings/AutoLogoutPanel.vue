@@ -55,37 +55,6 @@
                 </p>
             </div>
 
-            <!-- Silent Mode Toggle -->
-            <div v-if="localSettings.AutoLogoutEnabled" class="flex items-center justify-between pt-6 border-t border-gray-200">
-                <div class="flex-1">
-                    <label class="text-base font-semibold text-gray-900">
-                        Тихи режим (без порука)
-                    </label>
-                    <p class="text-sm text-gray-600 mt-1">
-                        Не шаље email нотификације приликом аутоматског logout-а.
-                    </p>
-                </div>
-                <div class="ml-4">
-                    <button
-                        type="button"
-                        @click="toggleSilentMode"
-                        :class="[
-                            'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2',
-                            localSettings.SilentAutoLogout ? 'bg-blue-600' : 'bg-gray-200'
-                        ]"
-                        role="switch"
-                        :aria-checked="localSettings.SilentAutoLogout"
-                    >
-                        <span
-                            :class="[
-                                'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
-                                localSettings.SilentAutoLogout ? 'translate-x-5' : 'translate-x-0'
-                            ]"
-                        />
-                    </button>
-                </div>
-            </div>
-
             <!-- Info Messages -->
             <div v-if="localSettings.AutoLogoutEnabled" class="bg-amber-50 border-l-4 border-amber-600 p-4">
                 <div class="flex">
@@ -95,10 +64,8 @@
                     <div class="text-sm text-amber-700">
                         <p class="font-semibold mb-1">Напомена:</p>
                         <ul class="list-disc list-inside space-y-1">
-                            <li>Корисници ће добити упозорење 5 минута пре logout-а</li>
                             <li>Сви активни тајмлогови ће бити затворени</li>
-                            <li v-if="!localSettings.SilentAutoLogout">Email нотификација ће бити послата сваком кориснику</li>
-                            <li v-else>Корисници неће примити email нотификацију</li>
+                            <li>Корисници ће бити одјављени у подешено време</li>
                         </ul>
                     </div>
                 </div>
@@ -155,17 +122,12 @@ const toggleAutoLogout = () => {
     localSettings.value.AutoLogoutEnabled = !localSettings.value.AutoLogoutEnabled;
 };
 
-const toggleSilentMode = () => {
-    localSettings.value.SilentAutoLogout = !localSettings.value.SilentAutoLogout;
-};
-
 const saveSettings = () => {
     saving.value = true;
 
     router.post('/settings', {
         AutoLogoutEnabled: localSettings.value.AutoLogoutEnabled,
         AutoLogoutTime: localSettings.value.AutoLogoutTime,
-        SilentAutoLogout: localSettings.value.SilentAutoLogout,
     }, {
         preserveScroll: true,
         onSuccess: () => {

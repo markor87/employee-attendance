@@ -27,14 +27,12 @@ class SettingsController extends Controller
             // Auto Logout
             'AutoLogoutEnabled' => Setting::getBool('AutoLogoutEnabled', false),
             'AutoLogoutTime' => Setting::get('AutoLogoutTime', '18:00:00'),
-            'SilentAutoLogout' => Setting::getBool('SilentAutoLogout', false),
 
-            // Email
-            'EmailFromAddress' => Setting::get('EmailFromAddress', ''),
-            'EmailPassword' => Setting::get('EmailPassword', ''),
-            'SmtpHost' => Setting::get('SmtpHost', ''),
-            'SmtpPort' => Setting::getInt('SmtpPort', 587),
-            'EnableSsl' => Setting::getBool('EnableSsl', true),
+            // Email (read-only from .env)
+            'EmailFromAddress' => env('MAIL_USERNAME', env('MAIL_FROM_ADDRESS', '')),
+            'SmtpHost' => env('MAIL_HOST', 'smtp.gmail.com'),
+            'SmtpPort' => (int) env('MAIL_PORT', 587),
+            'EnableSsl' => env('MAIL_ENCRYPTION', 'tls') === 'tls',
 
             // Reminders
             'ReminderEnabled' => Setting::getBool('ReminderEnabled', false),
@@ -61,12 +59,6 @@ class SettingsController extends Controller
             'TwoFactorEnabled' => 'sometimes|boolean',
             'AutoLogoutEnabled' => 'sometimes|boolean',
             'AutoLogoutTime' => 'sometimes|string|regex:/^\d{2}:\d{2}:\d{2}$/',
-            'SilentAutoLogout' => 'sometimes|boolean',
-            'EmailFromAddress' => 'sometimes|email',
-            'EmailPassword' => 'sometimes|string',
-            'SmtpHost' => 'sometimes|string',
-            'SmtpPort' => 'sometimes|integer|min:1|max:65535',
-            'EnableSsl' => 'sometimes|boolean',
             'ReminderEnabled' => 'sometimes|boolean',
             'ReminderCheckInTime' => 'sometimes|string|regex:/^\d{2}:\d{2}:\d{2}$/',
             'ReminderCheckOutTime' => 'sometimes|string|regex:/^\d{2}:\d{2}:\d{2}$/',
@@ -107,17 +99,17 @@ class SettingsController extends Controller
         ]);
 
         try {
-            // Get email settings from database
-            $emailFromAddress = Setting::get('EmailFromAddress', '');
-            $emailPassword = Setting::get('EmailPassword', '');
-            $smtpHost = Setting::get('SmtpHost', 'smtp.gmail.com');
-            $smtpPort = Setting::getInt('SmtpPort', 587);
-            $enableSsl = Setting::getBool('EnableSsl', true);
+            // Get email settings from .env
+            $emailFromAddress = env('MAIL_USERNAME', env('MAIL_FROM_ADDRESS', ''));
+            $emailPassword = env('MAIL_PASSWORD', '');
+            $smtpHost = env('MAIL_HOST', 'smtp.gmail.com');
+            $smtpPort = (int) env('MAIL_PORT', 587);
+            $enableSsl = env('MAIL_ENCRYPTION', 'tls') === 'tls';
 
             // Validate settings
             if (empty($emailFromAddress) || empty($emailPassword) || empty($smtpHost)) {
                 return back()->withErrors([
-                    'email' => 'Email подешавања нису комплетна. Молимо попуните све податке.',
+                    'email' => 'Email подешавања нису конфигурисана у .env фајлу.',
                 ]);
             }
 

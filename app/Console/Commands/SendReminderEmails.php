@@ -109,18 +109,18 @@ class SendReminderEmails extends Command
     }
 
     /**
-     * Configure mail settings from database
+     * Configure mail settings from .env
      */
     private function configureMailSettings()
     {
-        $emailFromAddress = Setting::get('EmailFromAddress', '');
-        $emailPassword = Setting::get('EmailPassword', '');
-        $smtpHost = Setting::get('SmtpHost', 'smtp.gmail.com');
-        $smtpPort = Setting::getInt('SmtpPort', 587);
-        $enableSsl = Setting::getBool('EnableSsl', true);
+        $emailFromAddress = env('MAIL_USERNAME', env('MAIL_FROM_ADDRESS', ''));
+        $emailPassword = env('MAIL_PASSWORD', '');
+        $smtpHost = env('MAIL_HOST', 'smtp.gmail.com');
+        $smtpPort = (int) env('MAIL_PORT', 587);
+        $enableSsl = env('MAIL_ENCRYPTION', 'tls') === 'tls';
 
         if (empty($emailFromAddress) || empty($emailPassword)) {
-            throw new \Exception('Email settings are not configured properly.');
+            throw new \Exception('Email settings are not configured properly in .env file.');
         }
 
         config([

@@ -193,18 +193,18 @@ class Setting extends Model
     }
 
     /**
-     * Get email settings.
+     * Get email settings from .env file.
      *
      * @return array
      */
     public static function getEmailSettings(): array
     {
         return [
-            'from_address' => static::get('EmailFromAddress'),
-            'password' => static::get('EmailPassword'),
-            'smtp_host' => static::get('SmtpHost'),
-            'smtp_port' => static::getInt('SmtpPort', 587),
-            'enable_ssl' => static::getBool('EnableSsl', true),
+            'from_address' => env('MAIL_USERNAME', env('MAIL_FROM_ADDRESS', '')),
+            'password' => env('MAIL_PASSWORD', ''),
+            'smtp_host' => env('MAIL_HOST', 'smtp.gmail.com'),
+            'smtp_port' => (int) env('MAIL_PORT', 587),
+            'enable_ssl' => env('MAIL_ENCRYPTION', 'tls') === 'tls',
         ];
     }
 }
