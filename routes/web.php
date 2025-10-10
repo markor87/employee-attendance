@@ -85,7 +85,9 @@ Route::middleware('auth')->group(function () {
 
         // Get reasons for check-in/out
         $checkInReasons = Reason::where('ReasonType', 'Dolazak')->get();
-        $checkOutReasons = Reason::where('ReasonType', 'Odlazak')->get();
+        $checkOutReasons = Reason::where('ReasonType', 'Odlazak')
+            ->whereNotIn('ReasonName', ['Аутоматска одјава'])
+            ->get();
 
         // Get today's check-ins for this user
         $todayCheckIns = TimeLog::where('UserID', $user->UserID)

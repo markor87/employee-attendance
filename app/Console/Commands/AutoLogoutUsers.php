@@ -55,8 +55,8 @@ class AutoLogoutUsers extends Command
 
         $this->info("Auto-logout triggered at $currentTime");
 
-        // Get "Automatska odjava" reason
-        $autoLogoutReason = Reason::where('ReasonName', 'Automatska odjava')
+        // Get "Аутоматска одјава" reason
+        $autoLogoutReason = Reason::where('ReasonName', 'Аутоматска одјава')
             ->where('ReasonType', 'Odlazak')
             ->first();
 
