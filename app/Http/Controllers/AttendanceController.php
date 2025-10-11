@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\TimeLog;
+use App\Models\Reason;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -344,6 +345,35 @@ class AttendanceController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Дошло је до грешке приликом одјављивања корисника.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get all reasons (for dropdowns in force check-in/out modals).
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getReasons()
+    {
+        try {
+            $checkInReasons = Reason::where('ReasonType', 'Dolazak')->get();
+            $checkOutReasons = Reason::where('ReasonType', 'Odlazak')
+                ->whereNotIn('ReasonName', ['Аутоматска одјава'])
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'checkIn' => $checkInReasons,
+                    'checkOut' => $checkOutReasons,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Грешка при учитавању разлога.',
                 'error' => $e->getMessage(),
             ], 500);
         }

@@ -1,11 +1,5 @@
 <template>
     <AppLayout :user="user" :laravel-version="laravelVersion">
-        <!-- Page Header -->
-        <div class="mb-8">
-            <h2 class="text-2xl font-bold text-gray-900">Добродошли назад, {{ user.FirstName }}!</h2>
-            <p class="text-sm text-gray-600 mt-1">Ево прегледа вашег система евиденције присуства.</p>
-        </div>
-
         <!-- Statistics Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <StatsCard
@@ -59,30 +53,27 @@
                 </div>
             </div>
 
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
+            <div class="overflow-hidden">
+                <table class="w-full table-fixed divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th scope="col" class="w-[280px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                                 Корисник
                             </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th scope="col" class="w-[300px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                                 Email
                             </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Улога
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th scope="col" class="w-[140px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                                 Статус
                             </th>
-                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th scope="col" class="w-[200px] px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                                 Акције
                             </th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         <tr v-if="users.data.length === 0">
-                            <td colspan="5" class="px-6 py-8 text-center text-sm text-gray-500">
+                            <td colspan="4" class="px-6 py-8 text-center text-sm text-gray-500">
                                 <svg class="h-12 w-12 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
                                 </svg>
@@ -92,24 +83,19 @@
                         </tr>
                         <tr v-for="user in users.data" :key="user.UserID" class="hover:bg-gray-50 transition-colors">
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <div class="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
+                                <div class="flex items-center min-w-0">
+                                    <div class="h-10 w-10 flex-shrink-0 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
                                         {{ getUserInitials(user) }}
                                     </div>
-                                    <div class="ml-4">
-                                        <div class="text-sm font-medium text-gray-900">
+                                    <div class="ml-4 min-w-0 flex-1">
+                                        <div class="text-sm font-medium text-gray-900 truncate" :title="`${user.FirstName} ${user.LastName}`">
                                             {{ user.FirstName }} {{ user.LastName }}
                                         </div>
                                     </div>
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">{{ user.Email }}</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span :class="getRoleBadgeClass(user.Role)" class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full">
-                                    {{ user.Role }}
-                                </span>
+                                <div class="text-sm text-gray-900 truncate" :title="user.Email">{{ user.Email }}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span
@@ -134,15 +120,22 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <a
-                                    :href="`/logs/${user.UserID}`"
-                                    class="inline-flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-md transition-colors"
-                                >
-                                    <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                    </svg>
-                                    Логови
-                                </a>
+                                <div class="flex items-center justify-end gap-1.5">
+                                    <UserActionsDropdown
+                                        :user="user"
+                                        @forceCheckIn="handleForceCheckIn"
+                                        @forceCheckOut="handleForceCheckOut"
+                                    />
+                                    <a
+                                        :href="`/logs/${user.UserID}`"
+                                        class="inline-flex items-center px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-md transition-colors flex-shrink-0"
+                                    >
+                                        <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                        </svg>
+                                        Логови
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     </tbody>
@@ -174,14 +167,39 @@
                 </div>
             </div>
         </div>
+
+        <!-- Force Check-In Modal -->
+        <ForceCheckInModal
+            v-if="selectedUser"
+            :show="showForceCheckInModal"
+            :user="selectedUser"
+            :checkInReasons="checkInReasons"
+            @close="showForceCheckInModal = false"
+            @submit="submitForceCheckIn"
+        />
+
+        <!-- Force Check-Out Modal -->
+        <ForceCheckOutModal
+            v-if="selectedUser"
+            :show="showForceCheckOutModal"
+            :user="selectedUser"
+            :activeLog="selectedUserActiveLog"
+            :checkOutReasons="checkOutReasons"
+            @close="showForceCheckOutModal = false"
+            @submit="submitForceCheckOut"
+        />
     </AppLayout>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import StatsCard from '@/Components/StatsCard.vue';
+import UserActionsDropdown from '@/Components/UserActionsDropdown.vue';
+import ForceCheckInModal from '@/Components/ForceCheckInModal.vue';
+import ForceCheckOutModal from '@/Components/ForceCheckOutModal.vue';
+import { useAttendance } from '@/composables/useAttendance';
 
 const props = defineProps({
     user: {
@@ -207,6 +225,30 @@ const props = defineProps({
 });
 
 const searchQuery = ref(props.filters.search || '');
+
+// Attendance composable
+const { forceCheckIn, forceCheckOut, getReasons } = useAttendance();
+
+// Modal state
+const showForceCheckInModal = ref(false);
+const showForceCheckOutModal = ref(false);
+const selectedUser = ref(null);
+const selectedUserActiveLog = ref(null);
+
+// Reasons data
+const checkInReasons = ref([]);
+const checkOutReasons = ref([]);
+
+// Load reasons on mount
+onMounted(async () => {
+    try {
+        const reasons = await getReasons();
+        checkInReasons.value = reasons.checkIn || [];
+        checkOutReasons.value = reasons.checkOut || [];
+    } catch (error) {
+        console.error('Failed to load reasons:', error);
+    }
+});
 
 const checkedInPercentage = computed(() => {
     if (props.stats.total_users === 0) return 0;
@@ -289,4 +331,47 @@ const paginationPages = computed(() => {
 
     return pages;
 });
+
+// Force check-in handler
+const handleForceCheckIn = async (user) => {
+    selectedUser.value = user;
+    showForceCheckInModal.value = true;
+};
+
+// Force check-out handler
+const handleForceCheckOut = async (user) => {
+    selectedUser.value = user;
+
+    // Find active log for this user from loaded data
+    const userData = props.users.data.find(u => u.UserID === user.UserID);
+    selectedUserActiveLog.value = userData?.active_time_log || null;
+
+    showForceCheckOutModal.value = true;
+};
+
+// Submit force check-in
+const submitForceCheckIn = async (data) => {
+    try {
+        await forceCheckIn(data);
+        showForceCheckInModal.value = false;
+
+        // Reload page to reflect changes
+        router.reload({ preserveScroll: true });
+    } catch (error) {
+        console.error('Force check-in failed:', error);
+    }
+};
+
+// Submit force check-out
+const submitForceCheckOut = async (data) => {
+    try {
+        await forceCheckOut(data);
+        showForceCheckOutModal.value = false;
+
+        // Reload page to reflect changes
+        router.reload({ preserveScroll: true });
+    } catch (error) {
+        console.error('Force check-out failed:', error);
+    }
+};
 </script>

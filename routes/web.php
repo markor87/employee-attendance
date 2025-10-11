@@ -51,6 +51,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/attendance/force-check-in', [AttendanceController::class, 'forceCheckIn'])->name('attendance.force.checkin');
     Route::post('/attendance/force-check-out', [AttendanceController::class, 'forceCheckOut'])->name('attendance.force.checkout');
 
+    // Get reasons for dropdowns
+    Route::get('/attendance/reasons', [AttendanceController::class, 'getReasons'])->name('attendance.reasons');
+
     // Logs (User can view own logs, Admin/Kadrovik can view any user's logs)
     Route::get('/logs/{userId}', [LogsController::class, 'show'])->name('logs.show');
 
@@ -144,8 +147,9 @@ Route::middleware('auth')->group(function () {
             });
         }
 
-        // Get paginated users (10 per page)
-        $users = $query->orderBy('FirstName')
+        // Get paginated users (10 per page) with active logs
+        $users = $query->with('activeTimeLog')
+            ->orderBy('FirstName')
             ->orderBy('LastName')
             ->paginate(10)
             ->withQueryString();
