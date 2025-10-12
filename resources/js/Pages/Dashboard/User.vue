@@ -436,6 +436,22 @@ const submitScheduleEntry = async (data) => {
             body: JSON.stringify(data),
         });
 
+        // Check if response is OK before parsing
+        if (!response.ok) {
+            // If 422 (validation error), try to read JSON
+            if (response.status === 422) {
+                const errorData = await response.json();
+                toast.error(errorData.message || 'Валидација није успела.');
+                return;
+            }
+
+            // For other errors, try to read text
+            const errorText = await response.text();
+            console.error('Server error:', errorText);
+            toast.error('Дошло је до грешке на серверу.');
+            return;
+        }
+
         const result = await response.json();
 
         if (result.success) {
