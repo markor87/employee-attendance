@@ -123,18 +123,9 @@
                                 <div class="flex items-center justify-end gap-1.5">
                                     <UserActionsDropdown
                                         :user="user"
-                                        @forceCheckIn="handleForceCheckIn"
+                                        @scheduleEntry="handleScheduleEntry"
                                         @forceCheckOut="handleForceCheckOut"
                                     />
-                                    <a
-                                        :href="`/logs/${user.UserID}`"
-                                        class="inline-flex items-center px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-md transition-colors flex-shrink-0"
-                                    >
-                                        <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                        </svg>
-                                        Логови
-                                    </a>
                                 </div>
                             </td>
                         </tr>
@@ -168,14 +159,14 @@
             </div>
         </div>
 
-        <!-- Force Check-In Modal -->
-        <ForceCheckInModal
+        <!-- Admin Schedule Entry Modal -->
+        <AdminScheduleEntryModal
             v-if="selectedUser"
-            :show="showForceCheckInModal"
+            :show="showScheduleEntryModal"
             :user="selectedUser"
-            :checkInReasons="checkInReasons"
-            @close="showForceCheckInModal = false"
-            @submit="submitForceCheckIn"
+            :adminReasons="adminReasons"
+            @close="showScheduleEntryModal = false"
+            @submit="submitScheduleEntry"
         />
 
         <!-- Force Check-Out Modal -->
@@ -194,10 +185,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { router } from '@inertiajs/vue3';
+import { useToast } from 'vue-toastification';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import StatsCard from '@/Components/StatsCard.vue';
 import UserActionsDropdown from '@/Components/UserActionsDropdown.vue';
-import ForceCheckInModal from '@/Components/ForceCheckInModal.vue';
+import AdminScheduleEntryModal from '@/Components/AdminScheduleEntryModal.vue';
 import ForceCheckOutModal from '@/Components/ForceCheckOutModal.vue';
 import { useAttendance } from '@/composables/useAttendance';
 
@@ -226,24 +218,34 @@ const props = defineProps({
 
 const searchQuery = ref(props.filters.search || '');
 
+// Toast notifications
+const toast = useToast();
+
 // Attendance composable
-const { forceCheckIn, forceCheckOut, getReasons } = useAttendance();
+const { forceCheckOut, getReasons } = useAttendance();
 
 // Modal state
-const showForceCheckInModal = ref(false);
+const showScheduleEntryModal = ref(false);
 const showForceCheckOutModal = ref(false);
 const selectedUser = ref(null);
 const selectedUserActiveLog = ref(null);
 
 // Reasons data
-const checkInReasons = ref([]);
+const adminReasons = ref([]);
 const checkOutReasons = ref([]);
 
 // Load reasons on mount
 onMounted(async () => {
     try {
+        // Load admin reasons (excludes "Dolazak na posao")
+        const adminReasonsResponse = await fetch('/attendance/admin/reasons');
+        const adminReasonsData = await adminReasonsResponse.json();
+        if (adminReasonsData.success) {
+            adminReasons.value = adminReasonsData.data || [];
+        }
+
+        // Load regular reasons for check-out
         const reasons = await getReasons();
-        checkInReasons.value = reasons.checkIn || [];
         checkOutReasons.value = reasons.checkOut || [];
     } catch (error) {
         console.error('Failed to load reasons:', error);
@@ -332,10 +334,10 @@ const paginationPages = computed(() => {
     return pages;
 });
 
-// Force check-in handler
-const handleForceCheckIn = async (user) => {
+// Schedule entry handler
+const handleScheduleEntry = async (user) => {
     selectedUser.value = user;
-    showForceCheckInModal.value = true;
+    showScheduleEntryModal.value = true;
 };
 
 // Force check-out handler
@@ -349,16 +351,32 @@ const handleForceCheckOut = async (user) => {
     showForceCheckOutModal.value = true;
 };
 
-// Submit force check-in
-const submitForceCheckIn = async (data) => {
+// Submit schedule entry
+const submitScheduleEntry = async (data) => {
     try {
-        await forceCheckIn(data);
-        showForceCheckInModal.value = false;
+        const response = await fetch('/attendance/admin/schedule-entry', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            },
+            body: JSON.stringify(data),
+        });
 
-        // Reload page to reflect changes
-        router.reload({ preserveScroll: true });
+        const result = await response.json();
+
+        if (result.success) {
+            toast.success('Одсуство је успешно евидентирано!');
+            showScheduleEntryModal.value = false;
+            // Reload page to reflect changes
+            router.reload({ preserveScroll: true });
+        } else {
+            console.error('Schedule entry failed:', result.message);
+            toast.error(result.message || 'Грешка при евидентирању одсуства');
+        }
     } catch (error) {
-        console.error('Force check-in failed:', error);
+        console.error('Schedule entry failed:', error);
+        toast.error('Дошло је до грешке приликом евидентирања');
     }
 };
 

@@ -109,23 +109,6 @@
                         </select>
                     </div>
 
-                    <!-- Status -->
-                    <div>
-                        <label for="status" class="block text-sm font-medium text-gray-700 mb-1">
-                            Статус *
-                        </label>
-                        <select
-                            id="status"
-                            v-model="form.Status"
-                            required
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        >
-                            <option value="">Изаберите статус</option>
-                            <option value="Prijavljen">Пријављен</option>
-                            <option value="Odjavljen">Одјављен</option>
-                        </select>
-                    </div>
-
                     <!-- Modal Footer -->
                     <div class="flex space-x-3 pt-4 border-t border-gray-200">
                         <button
@@ -171,7 +154,6 @@ const form = ref({
     Email: props.user?.Email || '',
     Password: '',
     Role: props.user?.Role || '',
-    Status: props.user?.Status || 'Odjavljen',
 });
 
 // Password strength calculation

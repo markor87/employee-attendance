@@ -29,7 +29,7 @@ class ChangePasswordRequest extends FormRequest
                 'min:8',
                 'confirmed',
                 'regex:/[0-9]/',        // At least one digit
-                'regex:/[@$!%*#?&]/',   // At least one special char
+                'regex:/[!@#$%^&*()_+\-=\[\]{};:\\\'"|,.<>\/?]/',   // At least one special char
             ],
         ];
     }
@@ -46,7 +46,7 @@ class ChangePasswordRequest extends FormRequest
             'new_password.required' => 'Нова лозинка је обавезна.',
             'new_password.min' => 'Нова лозинка мора садржати минимум :min карактера.',
             'new_password.confirmed' => 'Потврда лозинке се не подудара.',
-            'new_password.regex' => 'Лозинка мора садржати минимум један број и један специјални карактер (@$!%*#?&).',
+            'new_password.regex' => 'Лозинка мора садржати минимум један број и један специјални карактер.',
         ];
     }
 }

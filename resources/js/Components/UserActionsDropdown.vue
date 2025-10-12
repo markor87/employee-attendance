@@ -30,17 +30,16 @@
                 :style="dropdownStyle"
             >
                 <div class="py-1">
-                    <!-- Force Check-In (only if user is Odjavljen) -->
+                    <!-- Schedule Entry (Evidentiranje odsustva) -->
                     <button
-                        v-if="user.Status === 'Odjavljen'"
-                        @click="handleForceCheckIn"
+                        @click="handleScheduleEntry"
                         type="button"
-                        class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors flex items-center"
+                        class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors flex items-center"
                     >
-                        <svg class="h-5 w-5 mr-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        <svg class="h-5 w-5 mr-3 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                         </svg>
-                        Пријави корисника
+                        Евидентирај одсуство
                     </button>
 
                     <!-- Force Check-Out (only if user is Prijavljen) -->
@@ -92,7 +91,7 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits(['forceCheckIn', 'forceCheckOut']);
+const emit = defineEmits(['scheduleEntry', 'forceCheckOut']);
 
 const isOpen = ref(false);
 const dropdown = ref(null);
@@ -145,8 +144,8 @@ const positionDropdown = () => {
     };
 };
 
-const handleForceCheckIn = () => {
-    emit('forceCheckIn', props.user);
+const handleScheduleEntry = () => {
+    emit('scheduleEntry', props.user);
     closeDropdown();
 };
 

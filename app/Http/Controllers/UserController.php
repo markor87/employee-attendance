@@ -88,10 +88,9 @@ class UserController extends Controller
                 'regex:/[!@#$%^&*()_+\-=\[\]{};:\\\'"|,.<>\/?]/', // At least one special char
             ],
             'Role' => 'required|in:SuperAdmin,Admin,Kadrovik,Zaposleni',
-            'Status' => 'required|in:Prijavljen,Odjavljen',
         ]);
 
-        // Create user
+        // Create user (Status is always 'Odjavljen' for new users)
         $user = User::create([
             'FirstName' => $validated['FirstName'],
             'LastName' => $validated['LastName'],
@@ -99,8 +98,8 @@ class UserController extends Controller
             'PasswordHash' => Hash::make($validated['Password']),
             'PasswordHashAlgorithm' => 'bcrypt',
             'Role' => $validated['Role'],
-            'Status' => $validated['Status'],
-            'PasswordNeedsChange' => true,
+            'Status' => 'Odjavljen',
+            'PasswordNeedsChange' => false,
         ]);
 
         return back()->with('success', 'Корисник је успешно креиран.');
@@ -131,21 +130,19 @@ class UserController extends Controller
                 'regex:/[!@#$%^&*()_+\-=\[\]{};:\\\'"|,.<>\/?]/',
             ],
             'Role' => 'required|in:SuperAdmin,Admin,Kadrovik,Zaposleni',
-            'Status' => 'required|in:Prijavljen,Odjavljen',
         ]);
 
-        // Update user
+        // Update user (Status is not modified - it's managed by check-in/check-out system)
         $user->FirstName = $validated['FirstName'];
         $user->LastName = $validated['LastName'];
         $user->Email = $validated['Email'];
         $user->Role = $validated['Role'];
-        $user->Status = $validated['Status'];
 
         // Update password if provided
         if (!empty($validated['Password'])) {
             $user->PasswordHash = Hash::make($validated['Password']);
             $user->PasswordHashAlgorithm = 'bcrypt';
-            $user->PasswordNeedsChange = true;
+            $user->PasswordNeedsChange = false;
         }
 
         $user->save();

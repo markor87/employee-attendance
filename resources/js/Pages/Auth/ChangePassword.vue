@@ -205,7 +205,7 @@ const isFormValid = computed(() => {
            form.value.new_password.length >= 8 &&
            form.value.new_password === form.value.new_password_confirmation &&
            /[0-9]/.test(form.value.new_password) &&
-           /[@$!%*#?&]/.test(form.value.new_password);
+           /[!@#$%^&*()_+\-=\[\]{};:'"|,.<>\/?]/.test(form.value.new_password);
 });
 
 const submitChangePassword = () => {

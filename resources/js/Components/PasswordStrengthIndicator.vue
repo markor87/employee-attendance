@@ -43,7 +43,7 @@
                     <path v-if="requirements.hasSpecial" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                     <circle v-else cx="12" cy="12" r="10" stroke-width="2"></circle>
                 </svg>
-                <span>Најмање један специјални карактер (@$!%*#?&)</span>
+                <span>Најмање један специјални карактер</span>
             </li>
             <li class="flex items-center space-x-2" :class="requirements.hasUpper ? 'text-green-600' : 'text-gray-500'">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -69,7 +69,7 @@ const props = defineProps({
 const requirements = computed(() => ({
     length: props.password.length >= 8,
     hasDigit: /[0-9]/.test(props.password),
-    hasSpecial: /[@$!%*#?&]/.test(props.password),
+    hasSpecial: /[!@#$%^&*()_+\-=\[\]{};:'"|,.<>\/?]/.test(props.password),
     hasUpper: /[A-Z]/.test(props.password),
     hasLower: /[a-z]/.test(props.password),
 }));

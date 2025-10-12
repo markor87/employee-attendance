@@ -47,12 +47,13 @@ Route::middleware('auth')->group(function () {
     Route::post('/attendance/check-in', [AttendanceController::class, 'checkIn'])->name('attendance.checkin');
     Route::post('/attendance/check-out', [AttendanceController::class, 'checkOut'])->name('attendance.checkout');
 
-    // Force Attendance (Admin/Kadrovik only)
-    Route::post('/attendance/force-check-in', [AttendanceController::class, 'forceCheckIn'])->name('attendance.force.checkin');
+    // Admin Attendance Actions (Admin/Kadrovik only)
+    Route::post('/attendance/admin/schedule-entry', [AttendanceController::class, 'createScheduledEntry'])->name('attendance.admin.schedule');
     Route::post('/attendance/force-check-out', [AttendanceController::class, 'forceCheckOut'])->name('attendance.force.checkout');
 
     // Get reasons for dropdowns
     Route::get('/attendance/reasons', [AttendanceController::class, 'getReasons'])->name('attendance.reasons');
+    Route::get('/attendance/admin/reasons', [AttendanceController::class, 'getAdminReasons'])->name('attendance.admin.reasons');
 
     // Logs (User can view own logs, Admin/Kadrovik can view any user's logs)
     Route::get('/logs/{userId}', [LogsController::class, 'show'])->name('logs.show');
@@ -87,7 +88,9 @@ Route::middleware('auth')->group(function () {
             ->first();
 
         // Get reasons for check-in/out
-        $checkInReasons = Reason::where('ReasonType', 'Dolazak')->get();
+        $checkInReasons = Reason::where('ReasonType', 'Dolazak')
+            ->where('ReasonName', 'Долазак на посао')
+            ->get();
         $checkOutReasons = Reason::where('ReasonType', 'Odlazak')
             ->whereNotIn('ReasonName', ['Аутоматска одјава'])
             ->get();

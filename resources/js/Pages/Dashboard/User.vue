@@ -84,14 +84,23 @@
                 </button>
             </div>
 
-            <!-- My Logs Button -->
-            <div class="mb-8">
+            <!-- Secondary Actions (grid of 2) -->
+            <div class="grid grid-cols-2 gap-4 mb-8">
+                <!-- My Logs Button -->
                 <a
                     :href="`/logs/${user.UserID}`"
                     class="w-full block py-4 text-center text-base font-semibold text-gray-700 bg-white border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50 rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
                 >
                     📋 Моји логови
                 </a>
+
+                <!-- Schedule Absence Button -->
+                <button
+                    @click="openScheduleEntryModal"
+                    class="w-full py-4 text-center text-base font-semibold text-indigo-700 bg-indigo-50 border-2 border-indigo-300 hover:border-indigo-400 hover:bg-indigo-100 rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
+                >
+                    📅 Евидентирај одсуство
+                </button>
             </div>
 
             <!-- Quick Stats -->
@@ -220,6 +229,16 @@
                 </div>
             </div>
         </teleport>
+
+        <!-- Schedule Entry Modal -->
+        <AdminScheduleEntryModal
+            v-if="user"
+            :show="showScheduleEntryModal"
+            :user="user"
+            :adminReasons="adminReasons"
+            @close="showScheduleEntryModal = false"
+            @submit="submitScheduleEntry"
+        />
     </AppLayout>
 </template>
 
@@ -228,6 +247,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { useToast } from 'vue-toastification';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import AdminScheduleEntryModal from '@/Components/AdminScheduleEntryModal.vue';
 
 const props = defineProps({
     user: {
@@ -264,6 +284,7 @@ const toast = useToast();
 const currentTime = ref('');
 const showCheckInModal = ref(false);
 const showCheckOutModal = ref(false);
+const showScheduleEntryModal = ref(false);
 const submitting = ref(false);
 
 const checkInForm = ref({
@@ -275,6 +296,8 @@ const checkOutForm = ref({
     reason: '',
     notes: '',
 });
+
+const adminReasons = ref([]);
 
 const isCheckedIn = computed(() => props.user.Status === 'Prijavljen');
 
@@ -294,9 +317,20 @@ const updateTime = () => {
 
 let clockInterval = null;
 
-onMounted(() => {
+onMounted(async () => {
     updateTime();
     clockInterval = setInterval(updateTime, 1000);
+
+    // Load admin reasons (excludes "Dolazak na posao")
+    try {
+        const response = await fetch('/attendance/admin/reasons');
+        const data = await response.json();
+        if (data.success) {
+            adminReasons.value = data.data || [];
+        }
+    } catch (error) {
+        console.error('Failed to load admin reasons:', error);
+    }
 });
 
 onUnmounted(() => {
@@ -337,6 +371,10 @@ const openCheckInModal = () => {
 const openCheckOutModal = () => {
     checkOutForm.value = { reason: '', notes: '' };
     showCheckOutModal.value = true;
+};
+
+const openScheduleEntryModal = () => {
+    showScheduleEntryModal.value = true;
 };
 
 const submitCheckIn = () => {
@@ -385,5 +423,33 @@ const submitCheckOut = () => {
             submitting.value = false;
         },
     });
+};
+
+const submitScheduleEntry = async (data) => {
+    try {
+        const response = await fetch('/attendance/admin/schedule-entry', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            },
+            body: JSON.stringify(data),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            toast.success('Ваше одсуство је успешно евидентирано!');
+            showScheduleEntryModal.value = false;
+            // Reload page to reflect changes
+            router.reload({ preserveScroll: true });
+        } else {
+            console.error('Schedule entry failed:', result.message);
+            toast.error(result.message || 'Грешка при евидентирању одсуства');
+        }
+    } catch (error) {
+        console.error('Schedule entry failed:', error);
+        toast.error('Дошло је до грешке приликом евидентирања');
+    }
 };
 </script>
