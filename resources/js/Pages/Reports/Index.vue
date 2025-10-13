@@ -1,19 +1,64 @@
 <template>
-    <AppLayout :user="user" :laravel-version="laravelVersion">
+    <AppLayout :user="user">
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <StatsCard
+                title="Укупно корисника"
+                :value="stats.total_users"
+                subtitle="Укупан број запослених"
+                icon="users"
+                color="blue"
+            />
+
+            <StatsCard
+                title="Тренутно пријављени"
+                :value="stats.checked_in"
+                :subtitle="`${checkedInPercentage}% од укупног броја`"
+                icon="check"
+                color="green"
+            />
+
+            <StatsCard
+                title="На службеном одсуству"
+                :value="stats.on_leave"
+                :subtitle="`${onLeavePercentage}% од укупног броја`"
+                icon="calendar"
+                color="orange"
+            />
+        </div>
+
         <!-- Users Table -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200">
             <div class="px-6 py-4 border-b border-gray-200">
                 <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
-                    <h3 class="text-lg font-semibold text-gray-900">Сви корисници</h3>
-                    <!-- Search -->
-                    <div class="w-full md:w-96">
-                        <input
-                            v-model="searchQuery"
-                            type="text"
-                            placeholder="Претражи по имену, презимену или email-у..."
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            @input="handleSearch"
-                        />
+                    <h3 class="text-lg font-semibold text-gray-900">Корисници</h3>
+
+                    <!-- Filters -->
+                    <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+                        <!-- Sector Filter (only for non-Rukovodilac) -->
+                        <div v-if="!user.isRukovodilac" class="w-full md:w-64">
+                            <select
+                                v-model="sectorFilter"
+                                @change="handleFilterChange"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            >
+                                <option value="">Сви сектори</option>
+                                <option v-for="sector in sectors" :key="sector.id" :value="sector.id">
+                                    {{ sector.sector }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <!-- Search -->
+                        <div class="w-full md:w-96">
+                            <input
+                                v-model="searchQuery"
+                                type="text"
+                                placeholder="Претражи по имену, презимену или email-у..."
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                @input="handleSearch"
+                            />
+                        </div>
                     </div>
                 </div>
             </div>
@@ -22,17 +67,17 @@
                 <table class="w-full table-fixed divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th scope="col" class="w-[280px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                            <th scope="col" class="w-[260px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                                 Корисник
                             </th>
-                            <th scope="col" class="w-[300px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                            <th scope="col" class="w-[280px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                                 Email
                             </th>
-                            <th scope="col" class="w-[140px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                                Статус
+                            <th scope="col" class="w-[220px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                Сектор
                             </th>
-                            <th scope="col" class="w-[200px] px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                                Акције
+                            <th scope="col" class="w-[160px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                Статус
                             </th>
                         </tr>
                     </thead>
@@ -63,6 +108,11 @@
                                 <div class="text-sm text-gray-900 truncate" :title="user.Email">{{ user.Email }}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900 truncate" :title="user.sector?.sector || 'Без сектора'">
+                                    {{ user.sector?.sector || 'Без сектора' }}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
                                 <span
                                     :class="[
                                         'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
@@ -81,15 +131,6 @@
                                     </svg>
                                     {{ getStatusLabel(user.current_status) }}
                                 </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <div class="flex items-center justify-end gap-1.5">
-                                    <UserActionsDropdown
-                                        :user="user"
-                                        @scheduleEntry="handleScheduleEntry"
-                                        @forceCheckOut="handleForceCheckOut"
-                                    />
-                                </div>
                             </td>
                         </tr>
                     </tbody>
@@ -142,39 +183,14 @@
                 </div>
             </div>
         </div>
-
-        <!-- Admin Schedule Entry Modal -->
-        <AdminScheduleEntryModal
-            v-if="selectedUser"
-            :show="showScheduleEntryModal"
-            :user="selectedUser"
-            :adminReasons="adminReasons"
-            @close="showScheduleEntryModal = false"
-            @submit="submitScheduleEntry"
-        />
-
-        <!-- Force Check-Out Modal -->
-        <ForceCheckOutModal
-            v-if="selectedUser"
-            :show="showForceCheckOutModal"
-            :user="selectedUser"
-            :activeLog="selectedUserActiveLog"
-            :checkOutReasons="checkOutReasons"
-            @close="showForceCheckOutModal = false"
-            @submit="submitForceCheckOut"
-        />
     </AppLayout>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed } from 'vue';
 import { router } from '@inertiajs/vue3';
-import { useToast } from 'vue-toastification';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import UserActionsDropdown from '@/Components/UserActionsDropdown.vue';
-import AdminScheduleEntryModal from '@/Components/AdminScheduleEntryModal.vue';
-import ForceCheckOutModal from '@/Components/ForceCheckOutModal.vue';
-import { useAttendance } from '@/composables/useAttendance';
+import StatsCard from '@/Components/StatsCard.vue';
 
 const props = defineProps({
     user: {
@@ -189,50 +205,27 @@ const props = defineProps({
         type: Object,
         required: true,
     },
+    sectors: {
+        type: Array,
+        default: () => [],
+    },
     filters: {
         type: Object,
         default: () => ({}),
     },
-    laravelVersion: {
-        type: String,
-        default: '11.x',
-    },
 });
 
 const searchQuery = ref(props.filters.search || '');
+const sectorFilter = ref(props.filters.sector || '');
 
-// Toast notifications
-const toast = useToast();
+const checkedInPercentage = computed(() => {
+    if (props.stats.total_users === 0) return 0;
+    return Math.round((props.stats.checked_in / props.stats.total_users) * 100);
+});
 
-// Attendance composable
-const { forceCheckOut, getReasons } = useAttendance();
-
-// Modal state
-const showScheduleEntryModal = ref(false);
-const showForceCheckOutModal = ref(false);
-const selectedUser = ref(null);
-const selectedUserActiveLog = ref(null);
-
-// Reasons data
-const adminReasons = ref([]);
-const checkOutReasons = ref([]);
-
-// Load reasons on mount
-onMounted(async () => {
-    try {
-        // Load admin reasons (excludes "Dolazak na posao")
-        const adminReasonsResponse = await fetch('/attendance/admin/reasons');
-        const adminReasonsData = await adminReasonsResponse.json();
-        if (adminReasonsData.success) {
-            adminReasons.value = adminReasonsData.data || [];
-        }
-
-        // Load regular reasons for check-out
-        const reasons = await getReasons();
-        checkOutReasons.value = reasons.checkOut || [];
-    } catch (error) {
-        console.error('Failed to load reasons:', error);
-    }
+const onLeavePercentage = computed(() => {
+    if (props.stats.total_users === 0) return 0;
+    return Math.round((props.stats.on_leave / props.stats.total_users) * 100);
 });
 
 const getUserInitials = (user) => {
@@ -240,16 +233,6 @@ const getUserInitials = (user) => {
     const first = user.FirstName?.[0] || '';
     const last = user.LastName?.[0] || '';
     return (first + last).toUpperCase();
-};
-
-const getRoleBadgeClass = (role) => {
-    const classes = {
-        'SuperAdmin': 'bg-red-100 text-red-800',
-        'Admin': 'bg-purple-100 text-purple-800',
-        'Kadrovik': 'bg-blue-100 text-blue-800',
-        'Zaposleni': 'bg-gray-100 text-gray-800',
-    };
-    return classes[role] || 'bg-gray-100 text-gray-800';
 };
 
 const getStatusBadgeClass = (status) => {
@@ -276,8 +259,9 @@ let searchTimeout = null;
 const handleSearch = () => {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
-        router.get('/admin/dashboard', {
+        router.get('/reports', {
             search: searchQuery.value || undefined,
+            sector: sectorFilter.value || undefined,
         }, {
             preserveState: true,
             preserveScroll: true,
@@ -285,12 +269,23 @@ const handleSearch = () => {
     }, 300);
 };
 
+const handleFilterChange = () => {
+    router.get('/reports', {
+        search: searchQuery.value || undefined,
+        sector: sectorFilter.value || undefined,
+    }, {
+        preserveState: true,
+        preserveScroll: true,
+    });
+};
+
 const goToPage = (page) => {
     if (page === '...') return;
 
-    router.get('/admin/dashboard', {
+    router.get('/reports', {
         page: page,
         search: searchQuery.value || undefined,
+        sector: sectorFilter.value || undefined,
     }, {
         preserveState: true,
         preserveScroll: true,
@@ -331,79 +326,4 @@ const paginationPages = computed(() => {
 
     return pages;
 });
-
-// Schedule entry handler
-const handleScheduleEntry = async (user) => {
-    selectedUser.value = user;
-    showScheduleEntryModal.value = true;
-};
-
-// Force check-out handler
-const handleForceCheckOut = async (user) => {
-    selectedUser.value = user;
-
-    // Find active log for this user from loaded data
-    const userData = props.users.data.find(u => u.UserID === user.UserID);
-    selectedUserActiveLog.value = userData?.active_time_log || null;
-
-    showForceCheckOutModal.value = true;
-};
-
-// Submit schedule entry
-const submitScheduleEntry = async (data) => {
-    try {
-        const response = await fetch('/attendance/admin/schedule-entry', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            },
-            body: JSON.stringify(data),
-        });
-
-        // Check if response is OK before parsing
-        if (!response.ok) {
-            // If 422 (validation error), try to read JSON
-            if (response.status === 422) {
-                const errorData = await response.json();
-                toast.error(errorData.message || 'Валидација није успела.');
-                return;
-            }
-
-            // For other errors, try to read text
-            const errorText = await response.text();
-            console.error('Server error:', errorText);
-            toast.error('Дошло је до грешке на серверу.');
-            return;
-        }
-
-        const result = await response.json();
-
-        if (result.success) {
-            toast.success('Одсуство је успешно евидентирано!');
-            showScheduleEntryModal.value = false;
-            // Reload page to reflect changes
-            router.reload({ preserveScroll: true });
-        } else {
-            console.error('Schedule entry failed:', result.message);
-            toast.error(result.message || 'Грешка при евидентирању одсуства');
-        }
-    } catch (error) {
-        console.error('Schedule entry failed:', error);
-        toast.error('Дошло је до грешке приликом евидентирања');
-    }
-};
-
-// Submit force check-out
-const submitForceCheckOut = async (data) => {
-    try {
-        await forceCheckOut(data);
-        showForceCheckOutModal.value = false;
-
-        // Reload page to reflect changes
-        router.reload({ preserveScroll: true });
-    } catch (error) {
-        console.error('Force check-out failed:', error);
-    }
-};
 </script>

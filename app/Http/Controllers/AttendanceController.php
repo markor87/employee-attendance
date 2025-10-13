@@ -189,14 +189,37 @@ class AttendanceController extends Controller
 
         $targetUser = User::find($validated['user_id']);
 
-        // Authorization check: Regular users can ONLY schedule for themselves
-        // Admin/Kadrovik can schedule for anyone (including themselves from user dashboard)
+        // Authorization check:
+        // - Admin/Kadrovik can schedule for anyone
+        // - Rukovodilac can schedule ONLY for users in their sector
+        // - Regular users can ONLY schedule for themselves
         if ($validated['user_id'] != $currentUser->UserID) {
+            // Check if user is Admin or Kadrovik (full access)
             if (!$currentUser->isAdmin() && $currentUser->Role !== 'Kadrovik') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Можете евидентирати одсуство само за себе.',
-                ], 403);
+                // Check if user is Rukovodilac (sector-limited access)
+                if ($currentUser->Role === 'Rukovodilac') {
+                    // Rukovodilac must have a sector assigned
+                    if (!$currentUser->sector_id) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Немате додељен сектор.',
+                        ], 403);
+                    }
+
+                    // Target user must be in the same sector
+                    if ($targetUser->sector_id !== $currentUser->sector_id) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Можете евидентирати одсуство само за кориснике из вашег сектора.',
+                        ], 403);
+                    }
+                } else {
+                    // Regular users can only schedule for themselves
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Можете евидентирати одсуство само за себе.',
+                    ], 403);
+                }
             }
         }
 

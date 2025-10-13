@@ -98,7 +98,7 @@ class UserController extends Controller
                 'regex:/[0-9]/', // At least one digit
                 'regex:/[!@#$%^&*()_+\-=\[\]{};:\\\'"|,.<>\/?]/', // At least one special char
             ],
-            'Role' => 'required|in:SuperAdmin,Admin,Kadrovik,Zaposleni',
+            'Role' => 'required|in:SuperAdmin,Admin,Kadrovik,Zaposleni,Rukovodilac',
             'sector_id' => 'nullable|exists:sectors,id',
         ]);
 
@@ -142,7 +142,7 @@ class UserController extends Controller
                 'regex:/[0-9]/',
                 'regex:/[!@#$%^&*()_+\-=\[\]{};:\\\'"|,.<>\/?]/',
             ],
-            'Role' => 'required|in:SuperAdmin,Admin,Kadrovik,Zaposleni',
+            'Role' => 'required|in:SuperAdmin,Admin,Kadrovik,Zaposleni,Rukovodilac',
             'sector_id' => 'nullable|exists:sectors,id',
         ]);
 

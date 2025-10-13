@@ -8,6 +8,7 @@ use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\LogsController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\ReportsController;
 use App\Models\User;
 use App\Models\TimeLog;
 use App\Models\Setting;
@@ -60,6 +61,9 @@ Route::middleware('auth')->group(function () {
 
     // Admin Logs (Admin/Kadrovik only - view all logs)
     Route::get('/admin/logs', [LogsController::class, 'index'])->name('admin.logs');
+
+    // Reports (Admin/Kadrovik/Rukovodilac)
+    Route::get('/reports', [ReportsController::class, 'index'])->name('reports.index');
 
     // User Management (SuperAdmin/Admin only)
     Route::middleware('role:SuperAdmin|Admin')->group(function () {
@@ -124,28 +128,39 @@ Route::middleware('auth')->group(function () {
         ]);
     })->name('dashboard');
 
-    // Admin Dashboard (for Admin, Kadrovik, SuperAdmin)
+    // Admin Dashboard (for Admin, Kadrovik, SuperAdmin, Rukovodilac)
     Route::get('/admin/dashboard', function () {
-        // Check if user has admin role
-        if (!auth()->user()->isAdmin() && auth()->user()->Role !== 'Kadrovik') {
+        // Check if user has admin role or Rukovodilac
+        if (!auth()->user()->isAdmin() && auth()->user()->Role !== 'Kadrovik' && auth()->user()->Role !== 'Rukovodilac') {
             abort(403, 'Unauthorized');
         }
 
         $user = auth()->user();
 
-        // Get statistics
-        $totalUsers = User::count();
-        $checkedIn = User::where('Status', 'Prijavljen')->count();
-        $totalLogs = TimeLog::count();
-        $todayCheckins = TimeLog::whereDate('VremePrijave', today())->count();
+        // Build base query for statistics (filtered by sector for Rukovodilac)
+        $statsQuery = User::query();
+        if ($user->Role === 'Rukovodilac' && $user->sector_id) {
+            $statsQuery->where('sector_id', $user->sector_id);
+        }
+
+        // Get statistics (filtered for Rukovodilac, all for Admin/SuperAdmin/Kadrovik)
+        $totalUsers = (clone $statsQuery)->count();
+        $checkedIn = (clone $statsQuery)->where('Status', 'Prijavljen')->count();
+        $totalLogs = TimeLog::count(); // All logs regardless of role
+        $todayCheckins = TimeLog::whereDate('VremePrijave', today())->count(); // All today's check-ins
 
         // Calculate users on leave (Службено одсуство)
-        $onLeave = User::all()->filter(function($user) {
-            return $user->current_status === 'Службено одсуство';
+        $onLeave = (clone $statsQuery)->get()->filter(function($u) {
+            return $u->current_status === 'Службено одсуство';
         })->count();
 
         // Build users query with search
         $query = User::query();
+
+        // Sector filter for Rukovodilac
+        if ($user->Role === 'Rukovodilac' && $user->sector_id) {
+            $query->where('sector_id', $user->sector_id);
+        }
 
         // Search filter
         if (request('search')) {

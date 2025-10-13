@@ -38,7 +38,7 @@
                                     getRoleBadgeClass(user.Role)
                                 ]"
                             >
-                                {{ user.Role }}
+                                {{ getRoleLabel(user.Role) }}
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -70,6 +70,7 @@
 
 <script setup>
 import UserCrudActionsDropdown from './UserCrudActionsDropdown.vue';
+import { getRoleLabel, getRoleBadgeClass } from '@/utils/roleMapping';
 
 defineProps({
     users: {
@@ -79,14 +80,4 @@ defineProps({
 });
 
 defineEmits(['view', 'edit', 'delete', 'force-password-change']);
-
-const getRoleBadgeClass = (role) => {
-    const classes = {
-        'SuperAdmin': 'bg-purple-100 text-purple-800',
-        'Admin': 'bg-blue-100 text-blue-800',
-        'Kadrovik': 'bg-indigo-100 text-indigo-800',
-        'Zaposleni': 'bg-gray-100 text-gray-800',
-    };
-    return classes[role] || 'bg-gray-100 text-gray-800';
-};
 </script>

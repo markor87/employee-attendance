@@ -20,30 +20,6 @@
                     />
                 </div>
 
-                <!-- Role Filter -->
-                <select
-                    v-model="roleFilter"
-                    class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    @change="handleFilter"
-                >
-                    <option value="">Све улоге</option>
-                    <option value="SuperAdmin">SuperAdmin</option>
-                    <option value="Admin">Admin</option>
-                    <option value="Kadrovik">Kadrovik</option>
-                    <option value="Zaposleni">Запослени</option>
-                </select>
-
-                <!-- Status Filter -->
-                <select
-                    v-model="statusFilter"
-                    class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    @change="handleFilter"
-                >
-                    <option value="">Сви статуси</option>
-                    <option value="Prijavljen">Пријављен</option>
-                    <option value="Odjavljen">Одјављен</option>
-                </select>
-
                 <!-- Create User Button -->
                 <button
                     @click="openCreateModal"
@@ -133,10 +109,8 @@ const props = defineProps({
 
 const toast = useToast();
 
-// Search and filter state
+// Search state
 const searchQuery = ref(props.filters.search || '');
-const roleFilter = ref(props.filters.role || '');
-const statusFilter = ref(props.filters.status || '');
 
 // Modal state
 const showViewModal = ref(false);
@@ -153,8 +127,6 @@ const handleSearch = () => {
     searchTimeout = setTimeout(() => {
         router.get('/users', {
             search: searchQuery.value,
-            role: roleFilter.value,
-            status: statusFilter.value,
         }, {
             preserveState: true,
             preserveScroll: true,
@@ -162,25 +134,11 @@ const handleSearch = () => {
     }, 300);
 };
 
-// Handle filter change
-const handleFilter = () => {
-    router.get('/users', {
-        search: searchQuery.value,
-        role: roleFilter.value,
-        status: statusFilter.value,
-    }, {
-        preserveState: true,
-        preserveScroll: true,
-    });
-};
-
 // Pagination
 const goToPage = (page) => {
     router.get('/users', {
         page: page,
         search: searchQuery.value,
-        role: roleFilter.value,
-        status: statusFilter.value,
     }, {
         preserveState: true,
         preserveScroll: true,

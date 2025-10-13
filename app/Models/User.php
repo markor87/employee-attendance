@@ -140,6 +140,16 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if user is Rukovodilac (Manager).
+     *
+     * @return bool
+     */
+    public function isRukovodilac(): bool
+    {
+        return $this->Role === 'Rukovodilac';
+    }
+
+    /**
      * Check if user is currently checked in.
      *
      * @return bool

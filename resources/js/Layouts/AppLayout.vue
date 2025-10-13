@@ -22,7 +22,7 @@
                         <!-- User Info -->
                         <div class="hidden md:block text-right">
                             <p class="text-sm font-medium text-gray-900">{{ user.FirstName }} {{ user.LastName }}</p>
-                            <p class="text-xs text-gray-500">{{ user.Role }}</p>
+                            <p class="text-xs text-gray-500">{{ getRoleLabel(user.Role) }}</p>
                         </div>
 
                         <!-- User Avatar & Dropdown -->
@@ -57,8 +57,8 @@
                                     <div class="md:hidden px-4 py-3 border-b border-gray-200">
                                         <p class="text-sm font-medium text-gray-900">{{ user.FirstName }} {{ user.LastName }}</p>
                                         <p class="text-xs text-gray-500">{{ user.Email }}</p>
-                                        <span class="inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-700">
-                                            {{ user.Role }}
+                                        <span :class="['inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded-full', getRoleBadgeClass(user.Role)]">
+                                            {{ getRoleLabel(user.Role) }}
                                         </span>
                                     </div>
 
@@ -124,9 +124,9 @@
                             Почетна
                         </a>
 
-                        <!-- Admin Dashboard (for Admin/Kadrovik/SuperAdmin) -->
+                        <!-- Admin Dashboard (for Admin/Kadrovik/SuperAdmin/Rukovodilac) -->
                         <a
-                            v-if="user.isAdmin || user.Role === 'Kadrovik'"
+                            v-if="user.isAdmin || user.Role === 'Kadrovik' || user.Role === 'Rukovodilac'"
                             href="/admin/dashboard"
                             :class="[
                                 'flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors',
@@ -158,17 +158,21 @@
                             Корисници
                         </a>
 
-                        <!-- Reports (Admin/Kadrovik) -->
+                        <!-- Reports (Admin/Kadrovik/Rukovodilac) -->
                         <a
-                            v-if="user.isAdmin || user.Role === 'Kadrovik'"
-                            href="#"
-                            class="flex items-center px-4 py-3 text-sm font-medium rounded-lg text-gray-400 cursor-not-allowed"
+                            v-if="user.isAdmin || user.Role === 'Kadrovik' || user.Role === 'Rukovodilac'"
+                            href="/reports"
+                            :class="[
+                                'flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors',
+                                isActive('/reports')
+                                    ? 'bg-orange-50 text-orange-700'
+                                    : 'text-gray-700 hover:bg-gray-50'
+                            ]"
                         >
                             <svg class="h-5 w-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                             </svg>
                             Извештаји
-                            <span class="ml-auto text-xs bg-gray-100 px-2 py-1 rounded">Ускоро</span>
                         </a>
 
                         <!-- Settings (SuperAdmin only) -->
@@ -204,6 +208,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { useToast } from 'vue-toastification';
+import { getRoleLabel, getRoleBadgeClass } from '@/utils/roleMapping';
 
 const props = defineProps({
     user: {

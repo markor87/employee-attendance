@@ -102,10 +102,11 @@
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         >
                             <option value="">Изаберите улогу</option>
-                            <option value="SuperAdmin">SuperAdmin</option>
-                            <option value="Admin">Admin</option>
-                            <option value="Kadrovik">Kadrovik</option>
+                            <option value="SuperAdmin">СуперАдмин</option>
+                            <option value="Admin">Админ</option>
+                            <option value="Kadrovik">Кадровик</option>
                             <option value="Zaposleni">Запослени</option>
+                            <option value="Rukovodilac">Руководилац</option>
                         </select>
                     </div>
 
