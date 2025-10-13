@@ -64,6 +64,7 @@ Route::middleware('auth')->group(function () {
     // User Management (SuperAdmin/Admin only)
     Route::middleware('role:SuperAdmin|Admin')->group(function () {
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
+        Route::get('/users/{id}', [UserController::class, 'show'])->name('users.show');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
         Route::put('/users/{id}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
@@ -111,6 +112,7 @@ Route::middleware('auth')->group(function () {
                 'Email' => $user->Email,
                 'Role' => $user->Role,
                 'Status' => $user->Status,
+                'current_status' => $user->current_status,
                 'isAdmin' => $user->isAdmin(),
             ],
             'activeLog' => $activeLog,
@@ -137,6 +139,11 @@ Route::middleware('auth')->group(function () {
         $totalLogs = TimeLog::count();
         $todayCheckins = TimeLog::whereDate('VremePrijave', today())->count();
 
+        // Calculate users on leave (Службено одсуство)
+        $onLeave = User::all()->filter(function($user) {
+            return $user->current_status === 'Службено одсуство';
+        })->count();
+
         // Build users query with search
         $query = User::query();
 
@@ -157,6 +164,12 @@ Route::middleware('auth')->group(function () {
             ->paginate(10)
             ->withQueryString();
 
+        // Add current_status to each user
+        $users->getCollection()->transform(function ($user) {
+            $user->current_status = $user->current_status;
+            return $user;
+        });
+
         return inertia('Dashboard/Admin', [
             'user' => [
                 'UserID' => $user->UserID,
@@ -170,6 +183,7 @@ Route::middleware('auth')->group(function () {
             'stats' => [
                 'total_users' => $totalUsers,
                 'checked_in' => $checkedIn,
+                'on_leave' => $onLeave,
                 'total_logs' => $totalLogs,
                 'today_checkins' => $todayCheckins,
             ],

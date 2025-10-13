@@ -1,7 +1,7 @@
 <template>
     <AppLayout :user="user" :laravel-version="laravelVersion">
         <!-- Statistics Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <StatsCard
                 title="Укупно корисника"
                 :value="stats.total_users"
@@ -19,18 +19,10 @@
             />
 
             <StatsCard
-                title="Укупно логова"
-                :value="stats.total_logs"
-                subtitle="Укупан број пријава/одјава"
-                icon="clock"
-                color="purple"
-            />
-
-            <StatsCard
-                title="Данашње пријаве"
-                :value="stats.today_checkins || 0"
-                subtitle="Пријаве данас"
-                icon="activity"
+                title="На службеном одсуству"
+                :value="stats.on_leave"
+                :subtitle="`${onLeavePercentage}% од укупног броја`"
+                icon="calendar"
                 color="orange"
             />
         </div>
@@ -101,22 +93,20 @@
                                 <span
                                     :class="[
                                         'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                                        user.Status === 'Prijavljen'
-                                            ? 'bg-green-100 text-green-800'
-                                            : 'bg-gray-100 text-gray-800'
+                                        getStatusBadgeClass(user.current_status)
                                     ]"
                                 >
                                     <svg
                                         :class="[
                                             'mr-1.5 h-2 w-2',
-                                            user.Status === 'Prijavljen' ? 'animate-pulse' : ''
+                                            user.current_status === 'Prijavljen' ? 'animate-pulse' : ''
                                         ]"
                                         fill="currentColor"
                                         viewBox="0 0 8 8"
                                     >
                                         <circle cx="4" cy="4" r="3" />
                                     </svg>
-                                    {{ user.Status === 'Prijavljen' ? 'Пријављен' : 'Одјављен' }}
+                                    {{ getStatusLabel(user.current_status) }}
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -138,22 +128,43 @@
                 <div class="text-sm text-gray-700">
                     Приказано {{ users.from || 0 }}-{{ users.to || 0 }} од {{ users.total }} корисника
                 </div>
-                <div class="flex space-x-2">
+                <div class="flex items-center space-x-2">
+                    <!-- Previous Button -->
                     <button
-                        v-for="page in paginationPages"
-                        :key="page"
-                        @click="goToPage(page)"
-                        :disabled="page === users.current_page || page === '...'"
-                        :class="[
-                            'px-3 py-1 text-sm font-medium rounded-lg transition-colors',
-                            page === users.current_page
-                                ? 'bg-blue-600 text-white'
-                                : page === '...'
-                                ? 'text-gray-400 cursor-default'
-                                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                        ]"
+                        @click="goToPage(users.current_page - 1)"
+                        :disabled="users.current_page === 1"
+                        class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                        {{ page }}
+                        Претходна
+                    </button>
+
+                    <!-- Page Numbers -->
+                    <div class="flex space-x-1">
+                        <button
+                            v-for="page in paginationPages"
+                            :key="page"
+                            @click="goToPage(page)"
+                            :disabled="page === users.current_page || page === '...'"
+                            :class="[
+                                'px-3 py-2 text-sm font-medium rounded-md transition-colors',
+                                page === users.current_page
+                                    ? 'bg-blue-600 text-white'
+                                    : page === '...'
+                                    ? 'text-gray-700 cursor-default'
+                                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                            ]"
+                        >
+                            {{ page }}
+                        </button>
+                    </div>
+
+                    <!-- Next Button -->
+                    <button
+                        @click="goToPage(users.current_page + 1)"
+                        :disabled="users.current_page === users.last_page"
+                        class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                        Следећа
                     </button>
                 </div>
             </div>
@@ -257,6 +268,11 @@ const checkedInPercentage = computed(() => {
     return Math.round((props.stats.checked_in / props.stats.total_users) * 100);
 });
 
+const onLeavePercentage = computed(() => {
+    if (props.stats.total_users === 0) return 0;
+    return Math.round((props.stats.on_leave / props.stats.total_users) * 100);
+});
+
 const getUserInitials = (user) => {
     if (!user) return '?';
     const first = user.FirstName?.[0] || '';
@@ -272,6 +288,26 @@ const getRoleBadgeClass = (role) => {
         'Zaposleni': 'bg-gray-100 text-gray-800',
     };
     return classes[role] || 'bg-gray-100 text-gray-800';
+};
+
+const getStatusBadgeClass = (status) => {
+    const classes = {
+        'Prijavljen': 'bg-green-100 text-green-800',
+        'Одјављен': 'bg-gray-100 text-gray-800',
+        'Odjavljen': 'bg-gray-100 text-gray-800',
+        'Службено одсуство': 'bg-orange-100 text-orange-800',
+    };
+    return classes[status] || 'bg-gray-100 text-gray-800';
+};
+
+const getStatusLabel = (status) => {
+    const labels = {
+        'Prijavljen': 'Пријављен',
+        'Одјављен': 'Одјављен',
+        'Odjavljen': 'Одјављен',
+        'Службено одсуство': 'Службено одсуство',
+    };
+    return labels[status] || status;
 };
 
 let searchTimeout = null;

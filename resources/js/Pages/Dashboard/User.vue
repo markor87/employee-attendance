@@ -19,8 +19,10 @@
             <div
                 :class="[
                     'mb-8 rounded-2xl p-8 text-center shadow-xl border-2 transition-all duration-300',
-                    isCheckedIn
+                    user.current_status === 'Prijavljen'
                         ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-300'
+                        : user.current_status === 'Службено одсуство'
+                        ? 'bg-gradient-to-br from-orange-50 to-amber-50 border-orange-300'
                         : 'bg-gradient-to-br from-red-50 to-rose-50 border-red-300'
                 ]"
             >
@@ -29,13 +31,18 @@
                     <div
                         :class="[
                             'h-24 w-24 rounded-full flex items-center justify-center shadow-lg',
-                            isCheckedIn
+                            user.current_status === 'Prijavljen'
                                 ? 'bg-green-500'
+                                : user.current_status === 'Службено одсуство'
+                                ? 'bg-orange-500'
                                 : 'bg-red-500'
                         ]"
                     >
-                        <svg v-if="isCheckedIn" class="h-14 w-14 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg v-if="user.current_status === 'Prijavljen'" class="h-14 w-14 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <svg v-else-if="user.current_status === 'Службено одсуство'" class="h-14 w-14 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                         </svg>
                         <svg v-else class="h-14 w-14 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -45,10 +52,10 @@
 
                 <!-- Status Text -->
                 <h2 class="text-2xl font-bold text-gray-900 mb-2">
-                    {{ isCheckedIn ? 'Тренутно пријављени' : 'Тренутно одјављени' }}
+                    {{ currentStatusLabel }}
                 </h2>
                 <p class="text-sm text-gray-600">
-                    {{ isCheckedIn ? 'Имате активну пријаву на посао' : 'Нисте пријављени на посао' }}
+                    {{ currentStatusDescription }}
                 </p>
 
                 <!-- Check-in Time (if checked in) -->
@@ -101,18 +108,6 @@
                 >
                     📅 Евидентирај одсуство
                 </button>
-            </div>
-
-            <!-- Quick Stats -->
-            <div class="grid grid-cols-2 gap-4">
-                <div class="bg-white rounded-lg border border-gray-200 p-4 text-center">
-                    <p class="text-sm text-gray-600 mb-1">Пријава данас</p>
-                    <p class="text-2xl font-bold text-gray-900">{{ todayCheckIns }}</p>
-                </div>
-                <div class="bg-white rounded-lg border border-gray-200 p-4 text-center">
-                    <p class="text-sm text-gray-600 mb-1">Укупно логова</p>
-                    <p class="text-2xl font-bold text-gray-900">{{ totalLogs }}</p>
-                </div>
             </div>
         </div>
 
@@ -230,6 +225,13 @@
             </div>
         </teleport>
 
+        <!-- Leave Warning Modal -->
+        <LeaveWarningModal
+            v-if="showLeaveWarningModal"
+            @confirm="confirmCheckInFromLeave"
+            @cancel="cancelLeaveWarning"
+        />
+
         <!-- Schedule Entry Modal -->
         <AdminScheduleEntryModal
             v-if="user"
@@ -248,6 +250,7 @@ import { router } from '@inertiajs/vue3';
 import { useToast } from 'vue-toastification';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import AdminScheduleEntryModal from '@/Components/AdminScheduleEntryModal.vue';
+import LeaveWarningModal from '@/Components/LeaveWarningModal.vue';
 
 const props = defineProps({
     user: {
@@ -282,6 +285,7 @@ const props = defineProps({
 
 const toast = useToast();
 const currentTime = ref('');
+const showLeaveWarningModal = ref(false);
 const showCheckInModal = ref(false);
 const showCheckOutModal = ref(false);
 const showScheduleEntryModal = ref(false);
@@ -299,7 +303,27 @@ const checkOutForm = ref({
 
 const adminReasons = ref([]);
 
-const isCheckedIn = computed(() => props.user.Status === 'Prijavljen');
+const isCheckedIn = computed(() => props.user.current_status === 'Prijavljen');
+
+const currentStatusLabel = computed(() => {
+    const labels = {
+        'Prijavljen': 'Тренутно пријављени',
+        'Одјављен': 'Тренутно одјављени',
+        'Odjavljen': 'Тренутно одјављени',
+        'Службено одсуство': 'На службеном одсуству',
+    };
+    return labels[props.user.current_status] || 'Тренутно одјављени';
+});
+
+const currentStatusDescription = computed(() => {
+    const descriptions = {
+        'Prijavljen': 'Имате активну пријаву на посао',
+        'Одјављен': 'Нисте пријављени на посао',
+        'Odjavljen': 'Нисте пријављени на посао',
+        'Службено одсуство': 'Тренутно сте на евидентираном одсуству',
+    };
+    return descriptions[props.user.current_status] || 'Нисте пријављени на посао';
+});
 
 // Real-time clock
 const updateTime = () => {
@@ -364,8 +388,23 @@ const calculateWorkTime = (checkInTime) => {
 };
 
 const openCheckInModal = () => {
+    // Check if user is currently on leave
+    if (props.user.current_status === 'Службено одсуство') {
+        showLeaveWarningModal.value = true;
+    } else {
+        checkInForm.value = { reason: '', notes: '' };
+        showCheckInModal.value = true;
+    }
+};
+
+const confirmCheckInFromLeave = () => {
+    showLeaveWarningModal.value = false;
     checkInForm.value = { reason: '', notes: '' };
     showCheckInModal.value = true;
+};
+
+const cancelLeaveWarning = () => {
+    showLeaveWarningModal.value = false;
 };
 
 const openCheckOutModal = () => {

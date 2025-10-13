@@ -109,6 +109,23 @@
                         </select>
                     </div>
 
+                    <!-- Sector -->
+                    <div>
+                        <label for="sector" class="block text-sm font-medium text-gray-700 mb-1">
+                            Сектор
+                        </label>
+                        <select
+                            id="sector"
+                            v-model="form.sector_id"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                            <option value="">Без сектора</option>
+                            <option v-for="sector in sectors" :key="sector.id" :value="sector.id">
+                                {{ sector.sector }}
+                            </option>
+                        </select>
+                    </div>
+
                     <!-- Modal Footer -->
                     <div class="flex space-x-3 pt-4 border-t border-gray-200">
                         <button
@@ -143,6 +160,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    sectors: {
+        type: Array,
+        default: () => [],
+    },
 });
 
 const emit = defineEmits(['close', 'save']);
@@ -154,6 +175,7 @@ const form = ref({
     Email: props.user?.Email || '',
     Password: '',
     Role: props.user?.Role || '',
+    sector_id: props.user?.sector_id || '',
 });
 
 // Password strength calculation

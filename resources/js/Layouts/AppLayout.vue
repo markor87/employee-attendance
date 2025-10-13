@@ -141,22 +141,6 @@
                             Admin Dashboard
                         </a>
 
-                        <!-- My Logs -->
-                        <a
-                            :href="`/logs/${user.UserID}`"
-                            :class="[
-                                'flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors',
-                                isActive(`/logs/${user.UserID}`)
-                                    ? 'bg-yellow-50 text-yellow-700'
-                                    : 'text-gray-700 hover:bg-gray-50'
-                            ]"
-                        >
-                            <svg class="h-5 w-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                            </svg>
-                            Моји логови
-                        </a>
-
                         <!-- Users (Admin) -->
                         <a
                             v-if="user.isAdmin"
@@ -205,18 +189,6 @@
                             Подешавања
                         </a>
                     </nav>
-
-                    <!-- Quick Actions Card -->
-                    <div class="mt-4 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg border border-blue-200 p-4">
-                        <h3 class="text-sm font-semibold text-gray-900 mb-2">Брзе акције</h3>
-                        <p class="text-xs text-gray-600 mb-3">Пријава и одјава ће ускоро бити доступни овде.</p>
-                        <button
-                            disabled
-                            class="w-full px-4 py-2 text-sm font-medium text-gray-400 bg-gray-100 rounded-lg cursor-not-allowed"
-                        >
-                            Пријави се
-                        </button>
-                    </div>
                 </aside>
 
                 <!-- Main Content -->
@@ -225,22 +197,6 @@
                 </main>
             </div>
         </div>
-
-        <!-- Footer -->
-        <footer class="mt-12 border-t border-gray-200 bg-white">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-                <div class="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-                    <p class="text-sm text-gray-500">
-                        &copy; {{ new Date().getFullYear() }} Employee Attendance System
-                    </p>
-                    <div class="flex items-center space-x-4 text-sm text-gray-500">
-                        <span>Верзија 1.0.0</span>
-                        <span>•</span>
-                        <span>Laravel {{ laravelVersion }}</span>
-                    </div>
-                </div>
-            </div>
-        </footer>
     </div>
 </template>
 

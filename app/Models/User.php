@@ -45,6 +45,7 @@ class User extends Authenticatable
         'PasswordHashAlgorithm',
         'Role',
         'Status',
+        'sector_id',
         'PasswordNeedsChange',
         'DateCreated',
         'DateUpdated',
@@ -156,6 +157,49 @@ class User extends Authenticatable
     public function getFullNameAttribute(): string
     {
         return "{$this->FirstName} {$this->LastName}";
+    }
+
+    /**
+     * Get current status (including scheduled absence).
+     *
+     * Prioritizes:
+     * 1. Active check-in (Status = "Prijavljen")
+     * 2. Currently in scheduled absence (VremePrijave <= NOW <= VremeOdjave)
+     * 3. Otherwise "Odjavljen"
+     *
+     * @return string
+     */
+    public function getCurrentStatusAttribute(): string
+    {
+        // 1. If user has active check-in, return "Prijavljen"
+        if ($this->Status === 'Prijavljen') {
+            return 'Prijavljen';
+        }
+
+        // 2. Check if user is currently in a scheduled absence
+        $now = now();
+        $scheduledAbsence = $this->timeLogs()
+            ->whereNotNull('VremeOdjave')
+            ->where('VremePrijave', '<=', $now)
+            ->where('VremeOdjave', '>=', $now)
+            ->exists();
+
+        if ($scheduledAbsence) {
+            return 'Службено одсуство';
+        }
+
+        // 3. Otherwise, user is checked out
+        return 'Odjavljen';
+    }
+
+    /**
+     * Relationship: User belongs to a Sector.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function sector()
+    {
+        return $this->belongsTo(Sector::class, 'sector_id', 'id');
     }
 
     /**

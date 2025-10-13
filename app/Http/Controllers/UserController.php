@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Sector;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -47,6 +48,12 @@ class UserController extends Controller
         // Get pagination data
         $users = $query->paginate($perPage);
 
+        // Add current_status to each user
+        $users->getCollection()->transform(function ($user) {
+            $user->current_status = $user->current_status;
+            return $user;
+        });
+
         // Ensure currentPage doesn't exceed totalPages
         $totalPages = $users->lastPage();
         $currentPage = $users->currentPage();
@@ -60,8 +67,12 @@ class UserController extends Controller
             ]);
         }
 
+        // Load sectors
+        $sectors = Sector::orderBy('sector', 'asc')->get();
+
         return Inertia::render('Users/Index', [
             'users' => $users,
+            'sectors' => $sectors,
             'filters' => [
                 'search' => $search,
                 'role' => $roleFilter,
@@ -88,6 +99,7 @@ class UserController extends Controller
                 'regex:/[!@#$%^&*()_+\-=\[\]{};:\\\'"|,.<>\/?]/', // At least one special char
             ],
             'Role' => 'required|in:SuperAdmin,Admin,Kadrovik,Zaposleni',
+            'sector_id' => 'nullable|exists:sectors,id',
         ]);
 
         // Create user (Status is always 'Odjavljen' for new users)
@@ -99,6 +111,7 @@ class UserController extends Controller
             'PasswordHashAlgorithm' => 'bcrypt',
             'Role' => $validated['Role'],
             'Status' => 'Odjavljen',
+            'sector_id' => $validated['sector_id'] ?? null,
             'PasswordNeedsChange' => false,
         ]);
 
@@ -130,6 +143,7 @@ class UserController extends Controller
                 'regex:/[!@#$%^&*()_+\-=\[\]{};:\\\'"|,.<>\/?]/',
             ],
             'Role' => 'required|in:SuperAdmin,Admin,Kadrovik,Zaposleni',
+            'sector_id' => 'nullable|exists:sectors,id',
         ]);
 
         // Update user (Status is not modified - it's managed by check-in/check-out system)
@@ -137,6 +151,7 @@ class UserController extends Controller
         $user->LastName = $validated['LastName'];
         $user->Email = $validated['Email'];
         $user->Role = $validated['Role'];
+        $user->sector_id = $validated['sector_id'] ?? null;
 
         // Update password if provided
         if (!empty($validated['Password'])) {
@@ -164,6 +179,22 @@ class UserController extends Controller
         $user->delete();
 
         return back()->with('success', 'Корисник је успешно обрисан.');
+    }
+
+    /**
+     * Display the specified user with details.
+     */
+    public function show($id)
+    {
+        $user = User::with('sector')->findOrFail($id);
+
+        // Add current_status
+        $user->current_status = $user->current_status;
+
+        return response()->json([
+            'success' => true,
+            'user' => $user,
+        ]);
     }
 
     /**

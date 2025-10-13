@@ -57,6 +57,7 @@
         <!-- Users Table -->
         <UserTable
             :users="users.data"
+            @view="openViewModal"
             @edit="openEditModal"
             @delete="openDeleteModal"
             @force-password-change="forcePasswordChange"
@@ -73,11 +74,19 @@
             @page-change="goToPage"
         />
 
+        <!-- View User Modal -->
+        <UserViewModal
+            v-if="showViewModal"
+            :user-id="selectedUserId"
+            @close="closeViewModal"
+        />
+
         <!-- User Modal (Create/Edit) -->
         <UserModal
             v-if="showUserModal"
             :user="selectedUser"
             :is-edit="isEditMode"
+            :sectors="sectors"
             @close="closeUserModal"
             @save="saveUser"
         />
@@ -100,12 +109,17 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import UserTable from '@/Components/UserTable.vue';
 import Pagination from '@/Components/Pagination.vue';
 import UserModal from '@/Components/UserModal.vue';
+import UserViewModal from '@/Components/UserViewModal.vue';
 import DeleteConfirmModal from '@/Components/DeleteConfirmModal.vue';
 
 const props = defineProps({
     users: {
         type: Object,
         required: true,
+    },
+    sectors: {
+        type: Array,
+        default: () => [],
     },
     filters: {
         type: Object,
@@ -125,9 +139,11 @@ const roleFilter = ref(props.filters.role || '');
 const statusFilter = ref(props.filters.status || '');
 
 // Modal state
+const showViewModal = ref(false);
 const showUserModal = ref(false);
 const showDeleteModal = ref(false);
 const selectedUser = ref(null);
+const selectedUserId = ref(null);
 const isEditMode = ref(false);
 
 // Debounced search
@@ -169,6 +185,18 @@ const goToPage = (page) => {
         preserveState: true,
         preserveScroll: true,
     });
+};
+
+// View user modal
+const openViewModal = (user) => {
+    selectedUserId.value = user.UserID;
+    showViewModal.value = true;
+};
+
+// Close view modal
+const closeViewModal = () => {
+    showViewModal.value = false;
+    selectedUserId.value = null;
 };
 
 // Create user modal
