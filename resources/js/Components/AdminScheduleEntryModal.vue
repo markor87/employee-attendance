@@ -69,12 +69,18 @@
                             <VueDatePicker
                                 v-model="form.checkInTime"
                                 time-picker
-                                format="HH:mm"
+                                :is-24="true"
                                 auto-apply
                                 :clearable="false"
                                 placeholder="Изаберите време"
                                 :class="{ 'border-red-500': errors.checkInTime }"
-                            />
+                            >
+                                <template #input-icon>
+                                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </template>
+                            </VueDatePicker>
                             <p v-if="errors.checkInTime" class="text-xs text-red-600 mt-1">{{ errors.checkInTime }}</p>
                         </div>
 
@@ -86,12 +92,18 @@
                             <VueDatePicker
                                 v-model="form.checkOutTime"
                                 time-picker
-                                format="HH:mm"
+                                :is-24="true"
                                 auto-apply
                                 :clearable="false"
                                 placeholder="Изаберите време"
                                 :class="{ 'border-red-500': errors.checkOutTime }"
-                            />
+                            >
+                                <template #input-icon>
+                                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </template>
+                            </VueDatePicker>
                             <p v-if="errors.checkOutTime" class="text-xs text-red-600 mt-1">{{ errors.checkOutTime }}</p>
                         </div>
                     </div>
@@ -205,8 +217,8 @@ const emit = defineEmits(['close', 'submit']);
 
 const form = ref({
     date: null,
-    checkInTime: null,
-    checkOutTime: null,
+    checkInTime: null, // VueDatePicker time object {hours, minutes}
+    checkOutTime: null, // VueDatePicker time object {hours, minutes}
     reason: '',
     notes: '',
 });
@@ -255,7 +267,6 @@ const closeModal = () => {
 
 const formatTime = (timeObj) => {
     if (!timeObj) return null;
-
     const hours = String(timeObj.hours).padStart(2, '0');
     const minutes = String(timeObj.minutes).padStart(2, '0');
     return `${hours}:${minutes}`;

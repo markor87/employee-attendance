@@ -436,4 +436,167 @@ class AttendanceController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Delete a time log entry.
+     * ONLY the user who created the log (PerformedByPrijava) can delete it.
+     * ONLY non-expired logs can be deleted (VremeOdjave must be in the future or null).
+     *
+     * @param int $logId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function deleteLog($logId)
+    {
+        $currentUser = Auth::user();
+
+        // Find the log
+        $log = TimeLog::find($logId);
+
+        if (!$log) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Лог није пронађен.',
+            ], 404);
+        }
+
+        // Authorization: ONLY the creator can delete
+        if ($log->PerformedByPrijava !== $currentUser->UserID) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Немате дозволу да обришете овај лог. Можете брисати само логове које сте сами креирали.',
+            ], 403);
+        }
+
+        // Check if log is expired (VremeOdjave is in the past)
+        if ($log->VremeOdjave && $log->VremeOdjave->isPast()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Не можете брисати истекли лог.',
+            ], 403);
+        }
+
+        // IMPORTANT: Cannot delete active check-ins (where VremeOdjave is null and user is currently checked in)
+        // But scheduled future entries with both times can be deleted
+        if ($log->VremeOdjave === null) {
+            // This is an active check-in, not a scheduled entry
+            return response()->json([
+                'success' => false,
+                'message' => 'Не можете брисати активну пријаву. Одјавите се прво.',
+            ], 403);
+        }
+
+        try {
+            $log->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Лог је успешно обрисан.',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Дошло је до грешке приликом брисања лога.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Update a time log entry.
+     * ONLY the user who created the log (PerformedByPrijava) can update it.
+     * ONLY non-expired logs can be updated (VremeOdjave must be in the future).
+     *
+     * @param Request $request
+     * @param int $logId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updateLog(Request $request, $logId)
+    {
+        $currentUser = Auth::user();
+
+        // Find the log
+        $log = TimeLog::find($logId);
+
+        if (!$log) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Лог није пронађен.',
+            ], 404);
+        }
+
+        // Authorization: ONLY the creator can update
+        if ($log->PerformedByPrijava !== $currentUser->UserID) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Немате дозволу да измените овај лог. Можете мењати само логове које сте сами креирали.',
+            ], 403);
+        }
+
+        // Check if log is expired (VremeOdjave is in the past)
+        if ($log->VremeOdjave && $log->VremeOdjave->isPast()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Не можете мењати истекли лог.',
+            ], 403);
+        }
+
+        // Cannot update active check-ins
+        if ($log->VremeOdjave === null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Не можете мењати активну пријаву.',
+            ], 403);
+        }
+
+        // Validate input
+        $validated = $request->validate([
+            'date' => 'required|date',
+            'check_in_time' => 'required|date_format:H:i',
+            'check_out_time' => 'required|date_format:H:i|after:check_in_time',
+            'reason' => 'required|string|max:255',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        // Combine date + time to create full datetime
+        $checkInDateTime = Carbon::createFromFormat('Y-m-d H:i', $validated['date'] . ' ' . $validated['check_in_time']);
+        $checkOutDateTime = Carbon::createFromFormat('Y-m-d H:i', $validated['date'] . ' ' . $validated['check_out_time']);
+
+        // Ensure the updated times are not in the past (still valid for editing)
+        if ($checkOutDateTime->isPast()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ново време одјаве не сме бити у прошлости.',
+            ], 400);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            // Update log
+            $log->update([
+                'VremePrijave' => $checkInDateTime,
+                'VremeOdjave' => $checkOutDateTime,
+                'RadniDatum' => $validated['date'],
+                'RazlogPrijave' => $validated['reason'],
+                'RazlogOdjave' => $validated['reason'],
+                'Napomena' => $validated['notes'] ?? null,
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Лог је успешно ажуриран.',
+                'data' => $log,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Дошло је до грешке приликом ажурирања лога.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }

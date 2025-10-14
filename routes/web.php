@@ -56,6 +56,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/attendance/reasons', [AttendanceController::class, 'getReasons'])->name('attendance.reasons');
     Route::get('/attendance/admin/reasons', [AttendanceController::class, 'getAdminReasons'])->name('attendance.admin.reasons');
 
+    // Log management (delete and update)
+    Route::delete('/attendance/logs/{logId}', [AttendanceController::class, 'deleteLog'])->name('attendance.logs.delete');
+    Route::put('/attendance/logs/{logId}', [AttendanceController::class, 'updateLog'])->name('attendance.logs.update');
+
     // Logs (User can view own logs, Admin/Kadrovik can view any user's logs)
     Route::get('/logs/{userId}', [LogsController::class, 'show'])->name('logs.show');
 

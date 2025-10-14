@@ -73,11 +73,12 @@
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Разлог одјаве</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">IP адреса</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Напомена</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Акције</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200">
                         <tr v-if="logs.data.length === 0">
-                            <td colspan="8" class="px-4 py-8 text-center text-gray-500">
+                            <td colspan="9" class="px-4 py-8 text-center text-gray-500">
                                 <svg class="h-12 w-12 mx-auto text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                                 </svg>
@@ -108,6 +109,32 @@
                                     {{ log.Napomena }}
                                 </span>
                                 <span v-else class="text-gray-400">-</span>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <div v-if="canManageLog(log)" class="flex items-center justify-center space-x-2">
+                                    <!-- Edit Button -->
+                                    <button
+                                        @click="openEditModal(log)"
+                                        class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                        title="Измени лог"
+                                    >
+                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                        </svg>
+                                    </button>
+
+                                    <!-- Delete Button -->
+                                    <button
+                                        @click="openDeleteModal(log)"
+                                        class="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                        title="Обриши лог"
+                                    >
+                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <span v-else class="text-gray-400 text-xs">-</span>
                             </td>
                         </tr>
                     </tbody>
@@ -180,13 +207,33 @@
                 </div>
             </div>
         </div>
+
+        <!-- Edit Log Modal -->
+        <EditLogModal
+            v-if="showEditModal"
+            :log="selectedLog"
+            :reasons="adminReasons"
+            @close="closeEditModal"
+            @submit="handleEditSubmit"
+        />
+
+        <!-- Delete Log Confirm Modal -->
+        <DeleteLogConfirmModal
+            v-if="showDeleteModal"
+            :log="selectedLog"
+            @close="closeDeleteModal"
+            @confirm="handleDeleteConfirm"
+        />
     </AppLayout>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { router } from '@inertiajs/vue3';
+import { useToast } from 'vue-toastification';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import EditLogModal from '@/Components/EditLogModal.vue';
+import DeleteLogConfirmModal from '@/Components/DeleteLogConfirmModal.vue';
 
 const props = defineProps({
     user: {
@@ -215,9 +262,30 @@ const props = defineProps({
     },
 });
 
+const toast = useToast();
+
 const dateFilters = ref({
     start_date: props.filters.start_date || '',
     end_date: props.filters.end_date || '',
+});
+
+// Modal state
+const showEditModal = ref(false);
+const showDeleteModal = ref(false);
+const selectedLog = ref(null);
+const adminReasons = ref([]);
+
+// Load admin reasons on mount
+onMounted(async () => {
+    try {
+        const response = await fetch('/attendance/admin/reasons');
+        const data = await response.json();
+        if (data.success) {
+            adminReasons.value = data.data || [];
+        }
+    } catch (error) {
+        console.error('Failed to load reasons:', error);
+    }
 });
 
 const formatDate = (date) => {
@@ -317,6 +385,113 @@ const paginationPages = computed(() => {
 
     return pages;
 });
+
+// Check if current user can manage (edit/delete) a log
+const canManageLog = (log) => {
+    // Log must be completed (have VremeOdjave)
+    if (!log.VremeOdjave) return false;
+
+    // Log must not be expired (VremeOdjave must be in the future)
+    const checkOutTime = new Date(log.VremeOdjave);
+    const now = new Date();
+    if (checkOutTime < now) return false;
+
+    // Current user must be the creator of the log
+    if (log.PerformedByPrijava !== props.user.UserID) return false;
+
+    return true;
+};
+
+// Open edit modal
+const openEditModal = (log) => {
+    selectedLog.value = log;
+    showEditModal.value = true;
+};
+
+// Close edit modal
+const closeEditModal = () => {
+    showEditModal.value = false;
+    selectedLog.value = null;
+};
+
+// Handle edit submit
+const handleEditSubmit = async (formData) => {
+    try {
+        const response = await fetch(`/attendance/logs/${selectedLog.value.LogID}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify(formData),
+        });
+
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Server returned non-JSON response');
+        }
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            toast.success('Лог је успешно ажуриран!');
+            closeEditModal();
+            // Reload logs
+            router.reload({ preserveScroll: true });
+        } else {
+            // Handle validation errors
+            if (result.errors) {
+                const errorMessages = Object.values(result.errors).flat().join(', ');
+                toast.error(errorMessages);
+            } else {
+                toast.error(result.message || 'Грешка при ажурирању лога');
+            }
+        }
+    } catch (error) {
+        console.error('Failed to update log:', error);
+        toast.error('Дошло је до грешке приликом ажурирања лога');
+    }
+};
+
+// Open delete modal
+const openDeleteModal = (log) => {
+    selectedLog.value = log;
+    showDeleteModal.value = true;
+};
+
+// Close delete modal
+const closeDeleteModal = () => {
+    showDeleteModal.value = false;
+    selectedLog.value = null;
+};
+
+// Handle delete confirm
+const handleDeleteConfirm = async () => {
+    try {
+        const response = await fetch(`/attendance/logs/${selectedLog.value.LogID}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            },
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            toast.success('Лог је успешно обрисан!');
+            closeDeleteModal();
+            // Reload logs
+            router.reload({ preserveScroll: true });
+        } else {
+            toast.error(result.message || 'Грешка при брисању лога');
+        }
+    } catch (error) {
+        console.error('Failed to delete log:', error);
+        toast.error('Дошло је до грешке приликом брисања лога');
+    }
+};
 </script>
 
 <style scoped>

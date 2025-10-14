@@ -32,7 +32,7 @@
                             required
                             class="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                             :class="{ 'border-red-500': form.errors.email }"
-                            placeholder="vas.email@primer.com"
+                            placeholder="Имејл адреса"
                         />
                         <p v-if="form.errors.email" class="mt-1 text-sm text-red-600">
                             {{ form.errors.email }}
@@ -53,7 +53,7 @@
                                 required
                                 class="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all pr-12"
                                 :class="{ 'border-red-500': form.errors.password }"
-                                placeholder="••••••••"
+                                placeholder="Лозинка"
                             />
                             <button
                                 type="button"

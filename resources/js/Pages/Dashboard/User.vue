@@ -106,7 +106,7 @@
                     @click="openScheduleEntryModal"
                     class="w-full py-4 text-center text-base font-semibold text-indigo-700 bg-indigo-50 border-2 border-indigo-300 hover:border-indigo-400 hover:bg-indigo-100 rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
                 >
-                    📅 Евидентирај одсуство
+                    📅 Евидентирај службено одсуство
                 </button>
             </div>
         </div>
