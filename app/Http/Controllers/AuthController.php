@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Setting;
 use App\Services\TwoFactorService;
 use App\Services\EmailService;
+use App\Services\LoginAttemptService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
@@ -15,11 +16,16 @@ class AuthController extends Controller
 {
     protected $twoFactorService;
     protected $emailService;
+    protected $loginAttemptService;
 
-    public function __construct(TwoFactorService $twoFactorService, EmailService $emailService)
-    {
+    public function __construct(
+        TwoFactorService $twoFactorService,
+        EmailService $emailService,
+        LoginAttemptService $loginAttemptService
+    ) {
         $this->twoFactorService = $twoFactorService;
         $this->emailService = $emailService;
+        $this->loginAttemptService = $loginAttemptService;
     }
 
     /**
@@ -42,21 +48,31 @@ class AuthController extends Controller
                 'remember_email' => 'boolean',
             ]);
 
+            // Check if account is locked out
+            if ($this->loginAttemptService->isLockedOut($request->email)) {
+                $remaining = $this->loginAttemptService->getLockoutRemaining($request->email);
+                $minutes = ceil($remaining / 60);
+
+                throw ValidationException::withMessages([
+                    'email' => "Налог је привремено закључан због превише неуспелих покушаја. Покушајте поново за {$minutes} минута.",
+                ]);
+            }
+
             // Find user by email
             $user = User::where('Email', $request->email)->first();
 
-            if (!$user) {
+            // Generic error message to prevent user enumeration
+            if (!$user || !$user->verifyPassword($request->password)) {
+                // Record failed attempt
+                $this->loginAttemptService->recordFailedAttempt($request->email, $request->ip());
+
                 throw ValidationException::withMessages([
-                    'email' => 'Корисник са овим email-ом не постоји.',
+                    'email' => 'Неисправан email или лозинка.',
                 ]);
             }
 
-            // Verify password
-            if (!$user->verifyPassword($request->password)) {
-                throw ValidationException::withMessages([
-                    'password' => 'Лозинка није исправна.',
-                ]);
-            }
+            // Clear failed attempts on successful login
+            $this->loginAttemptService->clearAttempts($request->email);
 
             // Check if 2FA is enabled (force cache refresh)
             \Cache::forget('setting.TwoFactorEnabled');

@@ -19,12 +19,12 @@ use Illuminate\Support\Facades\DB;
 Route::middleware('guest')->group(function () {
     // Login
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login.show');
-    Route::post('/login', [AuthController::class, 'login'])->name('login');
+    Route::post('/login', [AuthController::class, 'login'])->name('login')->middleware('throttle:5,1');
 
     // 2FA
     Route::get('/2fa', [TwoFactorController::class, 'show'])->name('2fa.show');
-    Route::post('/2fa/verify', [TwoFactorController::class, 'verify'])->name('2fa.verify');
-    Route::post('/2fa/resend', [TwoFactorController::class, 'resend'])->name('2fa.resend');
+    Route::post('/2fa/verify', [TwoFactorController::class, 'verify'])->name('2fa.verify')->middleware('throttle:3,1');
+    Route::post('/2fa/resend', [TwoFactorController::class, 'resend'])->name('2fa.resend')->middleware('throttle:3,10');
 });
 
 // Attendance Status - Outside auth middleware to return proper 401 when session expired

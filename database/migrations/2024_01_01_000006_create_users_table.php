@@ -15,15 +15,19 @@ return new class extends Migration
             $table->id('UserID');
             $table->string('FirstName', 50);
             $table->string('LastName', 50);
-            $table->string('Email', 100)->nullable()->unique();
+            $table->string('Email', 100)->unique()->nullable();
             $table->string('PasswordHash', 255);
-            $table->enum('Role', ['SuperAdmin', 'Admin', 'Zaposleni', 'Kadrovik']);
+            $table->enum('Role', ['SuperAdmin', 'Admin', 'Zaposleni', 'Kadrovik', 'Rukovodilac']);
+            $table->unsignedBigInteger('sector_id')->nullable();
             $table->enum('Status', ['Prijavljen', 'Odjavljen'])->default('Odjavljen')->nullable();
-            $table->boolean('PasswordNeedsChange')->default(0);
+            $table->boolean('PasswordNeedsChange')->default(false);
             $table->string('PasswordHashAlgorithm', 10)->default('SHA256');
             $table->string('Remember_token', 100)->nullable();
-            $table->timestamp('DateCreated')->nullable()->useCurrent();
-            $table->timestamp('DateUpdated')->nullable()->useCurrent()->useCurrentOnUpdate();
+            $table->timestamp('DateCreated')->default(DB::raw('CURRENT_TIMESTAMP'))->nullable();
+            $table->timestamp('DateUpdated')->default(DB::raw('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))->nullable();
+
+            // Foreign key constraint
+            $table->foreign('sector_id')->references('id')->on('sectors')->onDelete('set null');
         });
     }
 

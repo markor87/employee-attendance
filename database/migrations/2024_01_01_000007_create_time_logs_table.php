@@ -11,11 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('timelogs', function (Blueprint $table) {
+        Schema::create('TimeLogs', function (Blueprint $table) {
             $table->id('LogID');
             $table->unsignedBigInteger('UserID');
-            $table->integer('PerformedByPrijava');
-            $table->integer('PerformedByOdjava')->nullable();
+            $table->unsignedBigInteger('PerformedByPrijava');
+            $table->unsignedBigInteger('PerformedByOdjava')->nullable();
             $table->dateTime('VremePrijave')->nullable();
             $table->dateTime('VremeOdjave')->nullable();
             $table->date('RadniDatum')->nullable();
@@ -24,11 +24,11 @@ return new class extends Migration
             $table->string('IpAdresaPrijave', 45);
             $table->string('IpAdresaOdjave', 45)->nullable();
             $table->mediumText('Napomena')->nullable();
-            $table->timestamp('DateCreated')->useCurrent();
-            $table->timestamp('DateUpdated')->useCurrent()->useCurrentOnUpdate();
+            $table->timestamp('DateCreated')->default(DB::raw('CURRENT_TIMESTAMP'));
+            $table->timestamp('DateUpdated')->default(DB::raw('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'));
 
             // Foreign key constraint
-            $table->foreign('UserID')->references('UserID')->on('Users');
+            $table->foreign('UserID')->references('UserID')->on('Users')->onDelete('cascade');
         });
     }
 
@@ -37,6 +37,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('timelogs');
+        Schema::dropIfExists('TimeLogs');
     }
 };

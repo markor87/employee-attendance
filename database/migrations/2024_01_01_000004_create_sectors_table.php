@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('settings', function (Blueprint $table) {
-            $table->string('SettingKey', 255)->primary();
-            $table->string('SettingValue', 1000)->nullable();
+        Schema::create('sectors', function (Blueprint $table) {
+            $table->id();
+            $table->string('sector', 255)->nullable();
         });
     }
 
@@ -22,6 +22,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('settings');
+        Schema::dropIfExists('sectors');
     }
 };
