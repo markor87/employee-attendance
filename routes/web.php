@@ -68,6 +68,7 @@ Route::middleware('auth')->group(function () {
 
     // Reports (Admin/Kadrovik/Rukovodilac)
     Route::get('/reports', [ReportsController::class, 'index'])->name('reports.index');
+    Route::get('/api/reports/remote-users', [ReportsController::class, 'getRemoteUsers'])->name('reports.remote-users');
 
     // User Management (SuperAdmin/Admin only)
     Route::middleware('role:SuperAdmin|Admin')->group(function () {

@@ -49,6 +49,19 @@
                             </select>
                         </div>
 
+                        <!-- Location Filter -->
+                        <div class="w-full md:w-48">
+                            <select
+                                v-model="locationFilter"
+                                @change="handleFilterChange"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            >
+                                <option value="">Све локације</option>
+                                <option value="office">🏢 Канцеларија</option>
+                                <option value="remote">🏠 Удаљено</option>
+                            </select>
+                        </div>
+
                         <!-- Search -->
                         <div class="w-full md:w-96">
                             <input
@@ -183,14 +196,22 @@
                 </div>
             </div>
         </div>
+
+        <!-- Remote Users Modal -->
+        <RemoteUsersModal
+            v-if="showRemoteUsersModal"
+            @close="closeRemoteUsersModal"
+        />
     </AppLayout>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import StatsCard from '@/Components/StatsCard.vue';
+import RemoteUsersModal from '@/Components/RemoteUsersModal.vue';
+import { isOfficeIp, isRemoteIp } from '@/Utils/locationHelper';
 
 const props = defineProps({
     user: {
@@ -217,6 +238,8 @@ const props = defineProps({
 
 const searchQuery = ref(props.filters.search || '');
 const sectorFilter = ref(props.filters.sector || '');
+const locationFilter = ref(props.filters.location || '');
+const showRemoteUsersModal = ref(false);
 
 const checkedInPercentage = computed(() => {
     if (props.stats.total_users === 0) return 0;
@@ -262,6 +285,7 @@ const handleSearch = () => {
         router.get('/reports', {
             search: searchQuery.value || undefined,
             sector: sectorFilter.value || undefined,
+            location: locationFilter.value || undefined,
         }, {
             preserveState: true,
             preserveScroll: true,
@@ -273,6 +297,7 @@ const handleFilterChange = () => {
     router.get('/reports', {
         search: searchQuery.value || undefined,
         sector: sectorFilter.value || undefined,
+        location: locationFilter.value || undefined,
     }, {
         preserveState: true,
         preserveScroll: true,
@@ -286,11 +311,37 @@ const goToPage = (page) => {
         page: page,
         search: searchQuery.value || undefined,
         sector: sectorFilter.value || undefined,
+        location: locationFilter.value || undefined,
     }, {
         preserveState: true,
         preserveScroll: true,
     });
 };
+
+// Remote Users Modal
+const openRemoteUsersModal = () => {
+    showRemoteUsersModal.value = true;
+};
+
+const closeRemoteUsersModal = () => {
+    showRemoteUsersModal.value = false;
+};
+
+// Keyboard shortcut: Ctrl+Alt+R to open Remote Users Modal
+const handleKeyPress = (event) => {
+    if (event.ctrlKey && event.altKey && event.key === 'r') {
+        event.preventDefault();
+        openRemoteUsersModal();
+    }
+};
+
+onMounted(() => {
+    window.addEventListener('keydown', handleKeyPress);
+});
+
+onUnmounted(() => {
+    window.removeEventListener('keydown', handleKeyPress);
+});
 
 // Pagination with boundary checks
 const paginationPages = computed(() => {

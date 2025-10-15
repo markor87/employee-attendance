@@ -1,5 +1,40 @@
 <template>
     <AppLayout :user="user" :laravel-version="laravelVersion">
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <StatsCard
+                title="Укупно корисника"
+                :value="stats.total_users"
+                subtitle="Укупан број запослених"
+                icon="users"
+                color="blue"
+            />
+
+            <StatsCard
+                title="Тренутно пријављени"
+                :value="stats.checked_in"
+                :subtitle="`${checkedInPercentage}% од укупног броја`"
+                icon="check"
+                color="green"
+            />
+
+            <StatsCard
+                title="🏢 Канцеларија"
+                :value="locationStats.office"
+                subtitle="Пријављени из канцеларије"
+                icon="office"
+                color="green"
+            />
+
+            <StatsCard
+                title="🏠 Удаљено"
+                :value="locationStats.remote"
+                subtitle="Пријављени удаљено"
+                icon="home"
+                color="blue"
+            />
+        </div>
+
         <!-- Users Table -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200">
             <div class="px-6 py-4 border-b border-gray-200">
@@ -171,10 +206,12 @@ import { ref, computed, onMounted } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { useToast } from 'vue-toastification';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import StatsCard from '@/Components/StatsCard.vue';
 import UserActionsDropdown from '@/Components/UserActionsDropdown.vue';
 import AdminScheduleEntryModal from '@/Components/AdminScheduleEntryModal.vue';
 import ForceCheckOutModal from '@/Components/ForceCheckOutModal.vue';
 import { useAttendance } from '@/composables/useAttendance';
+import { isOfficeIp, isRemoteIp } from '@/Utils/locationHelper';
 
 const props = defineProps({
     user: {
@@ -203,6 +240,34 @@ const searchQuery = ref(props.filters.search || '');
 
 // Toast notifications
 const toast = useToast();
+
+// Computed - Statistics
+const checkedInPercentage = computed(() => {
+    if (props.stats.total_users === 0) return 0;
+    return Math.round((props.stats.checked_in / props.stats.total_users) * 100);
+});
+
+// Computed - Location Statistics
+const locationStats = computed(() => {
+    let office = 0;
+    let remote = 0;
+
+    props.users.data.forEach(user => {
+        // Only count users who are currently checked in (Prijavljen)
+        if (user.current_status === 'Prijavljen' && user.activeTimeLog) {
+            const ip = user.activeTimeLog.IpAdresaPrijave;
+            if (ip) {
+                if (isOfficeIp(ip)) {
+                    office++;
+                } else if (isRemoteIp(ip)) {
+                    remote++;
+                }
+            }
+        }
+    });
+
+    return { office, remote };
+});
 
 // Attendance composable
 const { forceCheckOut, getReasons } = useAttendance();

@@ -73,6 +73,12 @@ class LogsController extends Controller
         $totalHours = $totalMinutes / 60;
         $daysWorked = $completedLogs->pluck('RadniDatum')->unique()->count();
 
+        // Get all users for ViewLogModal (to show who performed check-in/check-out)
+        $allUsers = User::select('UserID', 'FirstName', 'LastName')
+            ->orderBy('FirstName')
+            ->orderBy('LastName')
+            ->get();
+
         return inertia('Logs/Index', [
             'user' => [
                 'UserID' => $authUser->UserID,
@@ -99,6 +105,7 @@ class LogsController extends Controller
                 'end_date' => $request->end_date,
             ],
             'isOwnLogs' => $authUser->UserID == $userId,
+            'allUsers' => $allUsers,
         ]);
     }
 

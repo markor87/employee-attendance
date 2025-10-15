@@ -68,17 +68,14 @@
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Датум</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Пријава</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Одјава</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Трајање</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Разлог пријаве</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Разлог одјаве</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">IP адреса</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Напомена</th>
                             <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Акције</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200">
                         <tr v-if="logs.data.length === 0">
-                            <td colspan="9" class="px-4 py-8 text-center text-gray-500">
+                            <td colspan="6" class="px-4 py-8 text-center text-gray-500">
                                 <svg class="h-12 w-12 mx-auto text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                                 </svg>
@@ -95,46 +92,16 @@
                                     Активна
                                 </span>
                             </td>
-                            <td class="px-4 py-3 text-sm font-medium text-gray-900">
-                                {{ calculateDuration(log.VremePrijave, log.VremeOdjave) }}
-                            </td>
                             <td class="px-4 py-3 text-sm text-gray-700">{{ log.RazlogPrijave || '-' }}</td>
                             <td class="px-4 py-3 text-sm text-gray-700">{{ log.RazlogOdjave || '-' }}</td>
-                            <td class="px-4 py-3 text-xs text-gray-600">
-                                <div>{{ log.IpAdresaPrijave }}</div>
-                                <div v-if="log.IpAdresaOdjave" class="text-gray-500">{{ log.IpAdresaOdjave }}</div>
-                            </td>
-                            <td class="px-4 py-3 text-sm text-gray-600">
-                                <span v-if="log.Napomena" class="line-clamp-2" :title="log.Napomena">
-                                    {{ log.Napomena }}
-                                </span>
-                                <span v-else class="text-gray-400">-</span>
-                            </td>
                             <td class="px-4 py-3 text-center">
-                                <div v-if="canManageLog(log)" class="flex items-center justify-center space-x-2">
-                                    <!-- Edit Button -->
-                                    <button
-                                        @click="openEditModal(log)"
-                                        class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                        title="Измени лог"
-                                    >
-                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                        </svg>
-                                    </button>
-
-                                    <!-- Delete Button -->
-                                    <button
-                                        @click="openDeleteModal(log)"
-                                        class="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                        title="Обриши лог"
-                                    >
-                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                        </svg>
-                                    </button>
-                                </div>
-                                <span v-else class="text-gray-400 text-xs">-</span>
+                                <LogActionsDropdown
+                                    :log="log"
+                                    :canManage="canManageLog(log)"
+                                    @view="openViewModal(log)"
+                                    @edit="openEditModal(log)"
+                                    @delete="openDeleteModal(log)"
+                                />
                             </td>
                         </tr>
                     </tbody>
@@ -208,6 +175,14 @@
             </div>
         </div>
 
+        <!-- View Log Modal -->
+        <ViewLogModal
+            v-if="showViewModal"
+            :log="selectedLog"
+            :users="allUsers"
+            @close="closeViewModal"
+        />
+
         <!-- Edit Log Modal -->
         <EditLogModal
             v-if="showEditModal"
@@ -224,16 +199,27 @@
             @close="closeDeleteModal"
             @confirm="handleDeleteConfirm"
         />
+
+        <!-- Remote Logs Modal -->
+        <RemoteLogsModal
+            v-if="showRemoteLogsModal"
+            :logs="logs"
+            :userName="`${viewingUser.FirstName} ${viewingUser.LastName}`"
+            @close="closeRemoteLogsModal"
+        />
     </AppLayout>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { useToast } from 'vue-toastification';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import LogActionsDropdown from '@/Components/LogActionsDropdown.vue';
+import ViewLogModal from '@/Components/ViewLogModal.vue';
 import EditLogModal from '@/Components/EditLogModal.vue';
 import DeleteLogConfirmModal from '@/Components/DeleteLogConfirmModal.vue';
+import RemoteLogsModal from '@/Components/RemoteLogsModal.vue';
 
 const props = defineProps({
     user: {
@@ -260,6 +246,10 @@ const props = defineProps({
         type: Boolean,
         default: true,
     },
+    allUsers: {
+        type: Array,
+        default: () => [],
+    },
 });
 
 const toast = useToast();
@@ -270,8 +260,10 @@ const dateFilters = ref({
 });
 
 // Modal state
+const showViewModal = ref(false);
 const showEditModal = ref(false);
 const showDeleteModal = ref(false);
+const showRemoteLogsModal = ref(false);
 const selectedLog = ref(null);
 const adminReasons = ref([]);
 
@@ -286,6 +278,9 @@ onMounted(async () => {
     } catch (error) {
         console.error('Failed to load reasons:', error);
     }
+
+    // Add keyboard listener for Ctrl+Alt+R
+    window.addEventListener('keydown', handleKeyPress);
 });
 
 const formatDate = (date) => {
@@ -402,6 +397,18 @@ const canManageLog = (log) => {
     return true;
 };
 
+// Open view modal
+const openViewModal = (log) => {
+    selectedLog.value = log;
+    showViewModal.value = true;
+};
+
+// Close view modal
+const closeViewModal = () => {
+    showViewModal.value = false;
+    selectedLog.value = null;
+};
+
 // Open edit modal
 const openEditModal = (log) => {
     selectedLog.value = log;
@@ -466,6 +473,27 @@ const closeDeleteModal = () => {
     showDeleteModal.value = false;
     selectedLog.value = null;
 };
+
+// Remote Logs Modal
+const openRemoteLogsModal = () => {
+    showRemoteLogsModal.value = true;
+};
+
+const closeRemoteLogsModal = () => {
+    showRemoteLogsModal.value = false;
+};
+
+// Keyboard shortcut: Ctrl+Alt+R to open Remote Logs Modal
+const handleKeyPress = (event) => {
+    if (event.ctrlKey && event.altKey && event.key === 'r') {
+        event.preventDefault();
+        openRemoteLogsModal();
+    }
+};
+
+onUnmounted(() => {
+    window.removeEventListener('keydown', handleKeyPress);
+});
 
 // Handle delete confirm
 const handleDeleteConfirm = async () => {

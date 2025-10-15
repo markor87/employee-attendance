@@ -140,12 +140,12 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">Напомена (опционо)</label>
                         <textarea
                             v-model="checkInForm.notes"
-                            maxlength="500"
+                            maxlength="100"
                             rows="3"
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             placeholder="Унесите напомену..."
                         ></textarea>
-                        <p class="text-xs text-gray-500 text-right mt-1">{{ checkInForm.notes.length }}/500</p>
+                        <p class="text-xs text-gray-500 text-right mt-1">{{ checkInForm.notes.length }}/100</p>
                     </div>
 
                     <!-- Actions -->
@@ -197,12 +197,12 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">Напомена (опционо)</label>
                         <textarea
                             v-model="checkOutForm.notes"
-                            maxlength="500"
+                            maxlength="100"
                             rows="3"
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             placeholder="Унесите напомену..."
                         ></textarea>
-                        <p class="text-xs text-gray-500 text-right mt-1">{{ checkOutForm.notes.length }}/500</p>
+                        <p class="text-xs text-gray-500 text-right mt-1">{{ checkOutForm.notes.length }}/100</p>
                     </div>
 
                     <!-- Actions -->

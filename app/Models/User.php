@@ -33,6 +33,13 @@ class User extends Authenticatable
     public $timestamps = false;
 
     /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array<string>
+     */
+    protected $appends = ['current_status'];
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<string>

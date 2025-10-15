@@ -54,18 +54,43 @@ class ReportsController extends Controller
             });
         }
 
-        // Get paginated users (10 per page) with sector relationship
-        $users = $query->with('sector')
+        // Get paginated users (10 per page) with sector relationship and active log
+        $users = $query->with(['sector', 'activeTimeLog'])
             ->orderBy('FirstName')
             ->orderBy('LastName')
             ->paginate(10)
             ->withQueryString();
 
-        // Add current_status to each user
+        // Add current_status and activeTimeLog to each user
         $users->getCollection()->transform(function ($user) {
             $user->current_status = $user->current_status;
+            $user->active_time_log = $user->activeTimeLog; // Explicitly add as attribute for Inertia
             return $user;
         });
+
+        // Location filter - filter collection after loading
+        if ($request->has('location') && $request->location) {
+            $locationFilter = $request->location;
+            $users->setCollection(
+                $users->getCollection()->filter(function ($user) use ($locationFilter) {
+                    // Get user's active log IP address
+                    if (!$user->activeTimeLog || !$user->activeTimeLog->IpAdresaPrijave) {
+                        return $locationFilter === 'unknown';
+                    }
+
+                    $ip = $user->activeTimeLog->IpAdresaPrijave;
+                    $isOffice = str_starts_with($ip, '10.');
+
+                    if ($locationFilter === 'office') {
+                        return $isOffice;
+                    } else if ($locationFilter === 'remote') {
+                        return !$isOffice;
+                    }
+
+                    return true;
+                })
+            );
+        }
 
         // Get all sectors for filter dropdown (only for non-Rukovodilac users)
         $sectors = Sector::orderBy('sector', 'asc')->get();
@@ -92,7 +117,56 @@ class ReportsController extends Controller
             'filters' => [
                 'search' => $request->search,
                 'sector' => $request->sector,
+                'location' => $request->location,
             ],
+        ]);
+    }
+
+    /**
+     * Get all currently checked-in remote users (for debug modal).
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getRemoteUsers(Request $request)
+    {
+        $user = auth()->user();
+
+        // Build query with same permissions as index
+        $query = User::query();
+
+        // Sector filter - for Rukovodilac, only show users from same sector
+        if ($user->isRukovodilac() && $user->sector_id) {
+            $query->where('sector_id', $user->sector_id);
+        }
+
+        // Get ALL users (no pagination) with activeTimeLog, only those checked in
+        $allUsers = $query->with('activeTimeLog')
+            ->where('Status', 'Prijavljen')
+            ->get();
+
+        // Add current_status and active_time_log to each user (same as index method)
+        $allUsers->transform(function ($u) {
+            $u->current_status = $u->current_status;
+            $u->active_time_log = $u->activeTimeLog;
+            return $u;
+        });
+
+        // Filter only remote users
+        $remoteUsers = $allUsers->filter(function ($u) {
+            if (!$u->activeTimeLog) return false;
+
+            $ip = $u->activeTimeLog->IpAdresaPrijave;
+            if (!$ip) return false;
+
+            // Remote if NOT office (10.15.32.x or 172.x)
+            $isOffice = str_starts_with($ip, '10.15.32.') || str_starts_with($ip, '172.');
+            return !$isOffice;
+        })->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => $remoteUsers,
         ]);
     }
 }

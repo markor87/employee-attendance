@@ -100,11 +100,11 @@
                             id="notes"
                             v-model="form.notes"
                             rows="3"
-                            maxlength="500"
+                            maxlength="100"
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                             placeholder="Унесите напомену..."
                         ></textarea>
-                        <p class="text-xs text-gray-500 mt-1">{{ form.notes?.length || 0 }}/500 карактера</p>
+                        <p class="text-xs text-gray-500 mt-1">{{ form.notes?.length || 0 }}/100 карактера</p>
                     </div>
 
                     <!-- Warning -->
