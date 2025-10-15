@@ -42,19 +42,6 @@
                         Евидентирај одсуство
                     </button>
 
-                    <!-- Force Check-Out (only if user is Prijavljen) -->
-                    <button
-                        v-if="user.Status === 'Prijavljen'"
-                        @click="handleForceCheckOut"
-                        type="button"
-                        class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 transition-colors flex items-center"
-                    >
-                        <svg class="h-5 w-5 mr-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        Одјави корисника
-                    </button>
-
                     <!-- Divider -->
                     <div class="border-t border-gray-100 my-1"></div>
 
@@ -91,7 +78,7 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits(['scheduleEntry', 'forceCheckOut']);
+const emit = defineEmits(['scheduleEntry']);
 
 const isOpen = ref(false);
 const dropdown = ref(null);
@@ -146,11 +133,6 @@ const positionDropdown = () => {
 
 const handleScheduleEntry = () => {
     emit('scheduleEntry', props.user);
-    closeDropdown();
-};
-
-const handleForceCheckOut = () => {
-    emit('forceCheckOut', props.user);
     closeDropdown();
 };
 

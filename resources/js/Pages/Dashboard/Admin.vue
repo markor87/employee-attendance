@@ -87,7 +87,6 @@
                                     <UserActionsDropdown
                                         :user="user"
                                         @scheduleEntry="handleScheduleEntry"
-                                        @forceCheckOut="handleForceCheckOut"
                                     />
                                 </div>
                             </td>
@@ -152,17 +151,6 @@
             @close="showScheduleEntryModal = false"
             @submit="submitScheduleEntry"
         />
-
-        <!-- Force Check-Out Modal -->
-        <ForceCheckOutModal
-            v-if="selectedUser"
-            :show="showForceCheckOutModal"
-            :user="selectedUser"
-            :activeLog="selectedUserActiveLog"
-            :checkOutReasons="checkOutReasons"
-            @close="showForceCheckOutModal = false"
-            @submit="submitForceCheckOut"
-        />
     </AppLayout>
 </template>
 
@@ -174,8 +162,6 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import StatsCard from '@/Components/StatsCard.vue';
 import UserActionsDropdown from '@/Components/UserActionsDropdown.vue';
 import AdminScheduleEntryModal from '@/Components/AdminScheduleEntryModal.vue';
-import ForceCheckOutModal from '@/Components/ForceCheckOutModal.vue';
-import { useAttendance } from '@/composables/useAttendance';
 import { isOfficeIp, isRemoteIp } from '@/Utils/locationHelper';
 
 const props = defineProps({
@@ -234,18 +220,12 @@ const locationStats = computed(() => {
     return { office, remote };
 });
 
-// Attendance composable
-const { forceCheckOut, getReasons } = useAttendance();
-
 // Modal state
 const showScheduleEntryModal = ref(false);
-const showForceCheckOutModal = ref(false);
 const selectedUser = ref(null);
-const selectedUserActiveLog = ref(null);
 
 // Reasons data
 const adminReasons = ref([]);
-const checkOutReasons = ref([]);
 
 // Load reasons on mount
 onMounted(async () => {
@@ -256,10 +236,6 @@ onMounted(async () => {
         if (adminReasonsData.success) {
             adminReasons.value = adminReasonsData.data || [];
         }
-
-        // Load regular reasons for check-out
-        const reasons = await getReasons();
-        checkOutReasons.value = reasons.checkOut || [];
     } catch (error) {
         console.error('Failed to load reasons:', error);
     }
@@ -368,17 +344,6 @@ const handleScheduleEntry = async (user) => {
     showScheduleEntryModal.value = true;
 };
 
-// Force check-out handler
-const handleForceCheckOut = async (user) => {
-    selectedUser.value = user;
-
-    // Find active log for this user from loaded data
-    const userData = props.users.data.find(u => u.UserID === user.UserID);
-    selectedUserActiveLog.value = userData?.active_time_log || null;
-
-    showForceCheckOutModal.value = true;
-};
-
 // Submit schedule entry
 const submitScheduleEntry = async (data) => {
     try {
@@ -421,19 +386,6 @@ const submitScheduleEntry = async (data) => {
     } catch (error) {
         console.error('Schedule entry failed:', error);
         toast.error('Дошло је до грешке приликом евидентирања');
-    }
-};
-
-// Submit force check-out
-const submitForceCheckOut = async (data) => {
-    try {
-        await forceCheckOut(data);
-        showForceCheckOutModal.value = false;
-
-        // Reload page to reflect changes
-        router.reload({ preserveScroll: true });
-    } catch (error) {
-        console.error('Force check-out failed:', error);
     }
 };
 </script>
