@@ -70,14 +70,20 @@ class SendReminderEmails extends Command
         // Get users based on reminder type
         if ($reminderType === 'check-in') {
             // Check-in reminder: send to users who are logged out (Odjavljen)
-            $users = User::where('Status', 'Odjavljen')->get();
+            $allUsers = User::where('Status', 'Odjavljen')->get();
+            $users = User::where('Status', 'Odjavljen')->whereNotNull('Email')->get();
         } else {
             // Check-out reminder: send to users who are logged in (Prijavljen)
-            $users = User::where('Status', 'Prijavljen')->get();
+            $allUsers = User::where('Status', 'Prijavljen')->get();
+            $users = User::where('Status', 'Prijavljen')->whereNotNull('Email')->get();
         }
 
+        $this->info("Total users with appropriate status: {$allUsers->count()}");
+        $this->info("Users with valid email addresses: {$users->count()}");
+        Log::info("$reminderType reminders: {$allUsers->count()} users found, {$users->count()} with valid emails");
+
         if ($users->isEmpty()) {
-            $this->info("No users with appropriate status for $reminderType reminder.");
+            $this->info("No users with valid email addresses for $reminderType reminder.");
             return 0;
         }
 
@@ -88,17 +94,21 @@ class SendReminderEmails extends Command
 
         foreach ($users as $user) {
             try {
+                $this->info("Attempting to send to: {$user->FirstName} {$user->LastName} ({$user->Email})");
+                Log::info("Sending $reminderType reminder to: {$user->Email}");
+
                 Mail::raw($message, function ($mail) use ($user, $subject) {
                     $mail->to($user->Email)
                         ->subject($subject);
                 });
 
                 $sentCount++;
-                $this->info("Sent $reminderType reminder to: {$user->FirstName} {$user->LastName} ({$user->Email})");
+                $this->info("✓ Successfully sent to: {$user->Email}");
+                Log::info("Successfully sent $reminderType reminder to: {$user->Email}");
 
             } catch (\Exception $e) {
                 Log::error("Failed to send $reminderType reminder to {$user->Email}: " . $e->getMessage());
-                $this->error("Failed to send reminder to: {$user->Email}");
+                $this->error("✗ Failed to send to {$user->Email}: " . $e->getMessage());
             }
         }
 
