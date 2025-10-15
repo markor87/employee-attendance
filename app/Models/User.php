@@ -194,11 +194,13 @@ class User extends Authenticatable
         }
 
         // 2. Check if user is currently in a scheduled absence
+        // Only check for entries that are NOT regular work (i.e., not "Долазак на посао")
         $now = now();
         $scheduledAbsence = $this->timeLogs()
             ->whereNotNull('VremeOdjave')
             ->where('VremePrijave', '<=', $now)
             ->where('VremeOdjave', '>=', $now)
+            ->where('RazlogPrijave', '!=', 'Долазак на посао')
             ->exists();
 
         if ($scheduledAbsence) {

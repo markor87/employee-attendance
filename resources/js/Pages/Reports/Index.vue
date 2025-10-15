@@ -49,19 +49,6 @@
                             </select>
                         </div>
 
-                        <!-- Location Filter -->
-                        <div class="w-full md:w-48">
-                            <select
-                                v-model="locationFilter"
-                                @change="handleFilterChange"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            >
-                                <option value="">Све локације</option>
-                                <option value="office">🏢 Канцеларија</option>
-                                <option value="remote">🏠 Удаљено</option>
-                            </select>
-                        </div>
-
                         <!-- Search -->
                         <div class="w-full md:w-96">
                             <input
@@ -238,7 +225,6 @@ const props = defineProps({
 
 const searchQuery = ref(props.filters.search || '');
 const sectorFilter = ref(props.filters.sector || '');
-const locationFilter = ref(props.filters.location || '');
 const showRemoteUsersModal = ref(false);
 
 const checkedInPercentage = computed(() => {
@@ -285,7 +271,6 @@ const handleSearch = () => {
         router.get('/reports', {
             search: searchQuery.value || undefined,
             sector: sectorFilter.value || undefined,
-            location: locationFilter.value || undefined,
         }, {
             preserveState: true,
             preserveScroll: true,
@@ -297,7 +282,6 @@ const handleFilterChange = () => {
     router.get('/reports', {
         search: searchQuery.value || undefined,
         sector: sectorFilter.value || undefined,
-        location: locationFilter.value || undefined,
     }, {
         preserveState: true,
         preserveScroll: true,
@@ -311,7 +295,6 @@ const goToPage = (page) => {
         page: page,
         search: searchQuery.value || undefined,
         sector: sectorFilter.value || undefined,
-        location: locationFilter.value || undefined,
     }, {
         preserveState: true,
         preserveScroll: true,

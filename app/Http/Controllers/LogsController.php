@@ -23,14 +23,20 @@ class LogsController extends Controller
     {
         $authUser = Auth::user();
 
-        // Authorization: Users can only view their own logs
-        // Admins/Kadrovik can view any user's logs
-        if ($authUser->UserID != $userId && !$authUser->isAdmin() && $authUser->Role !== 'Kadrovik') {
-            abort(403, 'Немате дозволу да видите ове логове.');
-        }
-
         // Get the user whose logs we're viewing
         $user = User::findOrFail($userId);
+
+        // Authorization: Users can only view their own logs
+        // Admins/Kadrovik can view any user's logs
+        // Rukovodilac can view logs of users from same sector
+        $canView = $authUser->UserID == $userId // Own logs
+            || $authUser->isAdmin() // Admin/SuperAdmin
+            || $authUser->Role === 'Kadrovik' // Kadrovik
+            || ($authUser->Role === 'Rukovodilac' && $authUser->sector_id && $authUser->sector_id === $user->sector_id); // Rukovodilac + same sector
+
+        if (!$canView) {
+            abort(403, 'Немате дозволу да видите ове логове.');
+        }
 
         // Build query
         $query = TimeLog::where('UserID', $userId)

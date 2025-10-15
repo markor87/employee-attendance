@@ -1,47 +1,12 @@
 <template>
     <AppLayout :user="user" :laravel-version="laravelVersion">
-        <!-- Statistics Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <StatsCard
-                title="Укупно корисника"
-                :value="stats.total_users"
-                subtitle="Укупан број запослених"
-                icon="users"
-                color="blue"
-            />
-
-            <StatsCard
-                title="Тренутно пријављени"
-                :value="stats.checked_in"
-                :subtitle="`${checkedInPercentage}% од укупног броја`"
-                icon="check"
-                color="green"
-            />
-
-            <StatsCard
-                title="🏢 Канцеларија"
-                :value="locationStats.office"
-                subtitle="Пријављени из канцеларије"
-                icon="office"
-                color="green"
-            />
-
-            <StatsCard
-                title="🏠 Удаљено"
-                :value="locationStats.remote"
-                subtitle="Пријављени удаљено"
-                icon="home"
-                color="blue"
-            />
-        </div>
-
         <!-- Users Table -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200">
             <div class="px-6 py-4 border-b border-gray-200">
-                <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+                <div class="flex flex-col md:flex-row gap-4 items-center">
                     <h3 class="text-lg font-semibold text-gray-900">Сви корисници</h3>
                     <!-- Search -->
-                    <div class="w-full md:w-96">
+                    <div class="flex-1 md:max-w-md">
                         <input
                             v-model="searchQuery"
                             type="text"
