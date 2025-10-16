@@ -2,11 +2,11 @@
 
 namespace App\Console\Commands;
 
+use App\Jobs\SendReminderEmail;
 use App\Models\User;
 use App\Models\Setting;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
 
 class SendReminderEmails extends Command
@@ -87,66 +87,27 @@ class SendReminderEmails extends Command
             return 0;
         }
 
-        $sentCount = 0;
+        $dispatchedCount = 0;
 
-        // Configure mail settings from database
-        $this->configureMailSettings();
-
+        // Dispatch jobs to Queue for each user
         foreach ($users as $user) {
             try {
-                $this->info("Attempting to send to: {$user->FirstName} {$user->LastName} ({$user->Email})");
-                Log::info("Sending $reminderType reminder to: {$user->Email}");
+                $this->info("Dispatching {$reminderType} reminder to Queue for: {$user->FirstName} {$user->LastName} ({$user->Email})");
 
-                Mail::raw($message, function ($mail) use ($user, $subject) {
-                    $mail->to($user->Email)
-                        ->subject($subject);
-                });
+                SendReminderEmail::dispatch($user, $reminderType, $subject, $message);
 
-                $sentCount++;
-                $this->info("✓ Successfully sent to: {$user->Email}");
-                Log::info("Successfully sent $reminderType reminder to: {$user->Email}");
+                $dispatchedCount++;
+                $this->info("✓ Dispatched to Queue: {$user->Email}");
 
             } catch (\Exception $e) {
-                Log::error("Failed to send $reminderType reminder to {$user->Email}: " . $e->getMessage());
-                $this->error("✗ Failed to send to {$user->Email}: " . $e->getMessage());
+                Log::error("Failed to dispatch $reminderType reminder for {$user->Email}: " . $e->getMessage());
+                $this->error("✗ Failed to dispatch {$user->Email}: " . $e->getMessage());
             }
         }
 
-        $this->info("Reminder emails sent: $sentCount");
-        Log::info("$reminderType reminders: $sentCount emails sent at $currentTime");
+        $this->info("Dispatched $dispatchedCount {$reminderType} reminder jobs to Queue");
+        Log::info("$reminderType reminders: $dispatchedCount jobs dispatched to Queue at $currentTime");
 
         return 0;
-    }
-
-    /**
-     * Configure mail settings from .env
-     */
-    private function configureMailSettings()
-    {
-        $emailFromAddress = env('MAIL_USERNAME', env('MAIL_FROM_ADDRESS', ''));
-        $emailPassword = env('MAIL_PASSWORD', '');
-        $smtpHost = env('MAIL_HOST', 'smtp.gmail.com');
-        $smtpPort = (int) env('MAIL_PORT', 587);
-        $enableSsl = env('MAIL_ENCRYPTION', 'tls') === 'tls';
-
-        if (empty($emailFromAddress) || empty($emailPassword)) {
-            throw new \Exception('Email settings are not configured properly in .env file.');
-        }
-
-        config([
-            'mail.default' => 'smtp',
-            'mail.mailers.smtp.transport' => 'smtp',
-            'mail.mailers.smtp.host' => $smtpHost,
-            'mail.mailers.smtp.port' => $smtpPort,
-            'mail.mailers.smtp.encryption' => $enableSsl ? 'tls' : null,
-            'mail.mailers.smtp.username' => $emailFromAddress,
-            'mail.mailers.smtp.password' => $emailPassword,
-            'mail.mailers.smtp.timeout' => 30,
-            'mail.from.address' => $emailFromAddress,
-            'mail.from.name' => 'Employee Attendance System',
-        ]);
-
-        // Re-create mail manager to use new config
-        app()->forgetInstance('mail.manager');
     }
 }
