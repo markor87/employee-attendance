@@ -13,8 +13,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
-            // Temporarily disabled SecurityHeaders - causing blank page
-            // \App\Http\Middleware\SecurityHeaders::class,
+            \App\Http\Middleware\SecurityHeaders::class,
+        ]);
+
+        // Enable CSRF protection for web routes
+        $middleware->validateCsrfTokens(except: [
+            // Add any routes to exclude from CSRF verification
         ]);
 
         // Register role middleware alias

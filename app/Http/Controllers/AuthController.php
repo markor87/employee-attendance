@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\SecurityHelper;
 use App\Models\User;
 use App\Models\Setting;
+use App\Services\AuditService;
 use App\Services\TwoFactorService;
 use App\Services\EmailService;
 use App\Services\LoginAttemptService;
@@ -17,15 +19,18 @@ class AuthController extends Controller
     protected $twoFactorService;
     protected $emailService;
     protected $loginAttemptService;
+    protected $auditService;
 
     public function __construct(
         TwoFactorService $twoFactorService,
         EmailService $emailService,
-        LoginAttemptService $loginAttemptService
+        LoginAttemptService $loginAttemptService,
+        AuditService $auditService
     ) {
         $this->twoFactorService = $twoFactorService;
         $this->emailService = $emailService;
         $this->loginAttemptService = $loginAttemptService;
+        $this->auditService = $auditService;
     }
 
     /**
@@ -48,13 +53,15 @@ class AuthController extends Controller
                 'remember_email' => 'boolean',
             ]);
 
-            // Check if account is locked out
-            if ($this->loginAttemptService->isLockedOut($request->email)) {
-                $remaining = $this->loginAttemptService->getLockoutRemaining($request->email);
-                $minutes = ceil($remaining / 60);
+            // Check if account is locked out (by email or IP)
+            // Use generic error message to prevent user enumeration
+            if ($this->loginAttemptService->isLockedOut($request->email, $request->ip())) {
+                // Still record the attempt to prevent brute force
+                $this->loginAttemptService->recordFailedAttempt($request->email, $request->ip());
 
+                // Generic error message - don't reveal account is locked
                 throw ValidationException::withMessages([
-                    'email' => "Налог је привремено закључан због превише неуспелих покушаја. Покушајте поново за {$minutes} минута.",
+                    'email' => 'Неисправан email или лозинка. Покушајте касније.',
                 ]);
             }
 
@@ -66,13 +73,19 @@ class AuthController extends Controller
                 // Record failed attempt
                 $this->loginAttemptService->recordFailedAttempt($request->email, $request->ip());
 
+                // Log failed login attempt
+                $this->auditService->logFailedLogin($request->email, 'invalid_credentials');
+
                 throw ValidationException::withMessages([
-                    'email' => 'Неисправан email или лозинка.',
+                    'email' => 'Неисправан email или лозинка. Покушајте касније.',
                 ]);
             }
 
             // Clear failed attempts on successful login
             $this->loginAttemptService->clearAttempts($request->email);
+
+            // Log successful login
+            $this->auditService->logSuccessfulLogin($user->UserID);
 
             // Check if 2FA is enabled (force cache refresh)
             \Cache::forget('setting.TwoFactorEnabled');
@@ -103,11 +116,12 @@ class AuthController extends Controller
             // Re-throw validation exceptions
             throw $e;
         } catch (\Exception $e) {
-            // Log unexpected errors
+            // Log unexpected errors with masked sensitive data
             \Log::error('Login error', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
-                'email' => $request->email,
+                'email_masked' => SecurityHelper::maskEmail($request->email),
+                'ip_masked' => SecurityHelper::maskIp($request->ip()),
             ]);
 
             // Return back with error
@@ -150,10 +164,17 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
+        $userId = Auth::id();
+
         Auth::logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
+        // Log logout
+        if ($userId) {
+            $this->auditService->logLogout($userId);
+        }
 
         return redirect('/login');
     }

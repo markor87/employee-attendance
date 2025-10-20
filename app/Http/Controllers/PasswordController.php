@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Rules\StrongPassword;
+use App\Services\AuditService;
 use App\Services\UserService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,10 +14,12 @@ use Inertia\Inertia;
 class PasswordController extends Controller
 {
     protected $userService;
+    protected $auditService;
 
-    public function __construct(UserService $userService)
+    public function __construct(UserService $userService, AuditService $auditService)
     {
         $this->userService = $userService;
+        $this->auditService = $auditService;
     }
 
     /**
@@ -37,7 +41,7 @@ class PasswordController extends Controller
     {
         $request->validate([
             'current_password' => 'required|string',
-            'new_password' => 'required|string|min:8|confirmed',
+            'new_password' => ['required', 'string', 'confirmed', new StrongPassword()],
         ]);
 
         $user = Auth::user();
@@ -56,20 +60,14 @@ class PasswordController extends Controller
             ]);
         }
 
-        // Validate password strength
-        try {
-            $this->userService->validatePasswordStrength($request->new_password);
-        } catch (ValidationException $e) {
-            throw ValidationException::withMessages([
-                'new_password' => 'Лозинка мора садржати минимум 8 карактера, један број и један специјални карактер.',
-            ]);
-        }
-
         // Update password
         $user->setPasswordHash($request->new_password);
         $user->PasswordNeedsChange = false;
         $user->DateUpdated = now();
         $user->save();
+
+        // Log password change
+        $this->auditService->logPasswordChange($user->UserID, false);
 
         return redirect('/dashboard')->with('success', 'Лозинка је успешно промењена.');
     }
@@ -102,7 +100,7 @@ class PasswordController extends Controller
     public function forceChange(Request $request)
     {
         $request->validate([
-            'new_password' => 'required|string|min:8|confirmed',
+            'new_password' => ['required', 'string', 'confirmed', new StrongPassword()],
         ]);
 
         $user = Auth::user();
@@ -114,20 +112,14 @@ class PasswordController extends Controller
             ]);
         }
 
-        // Validate password strength
-        try {
-            $this->userService->validatePasswordStrength($request->new_password);
-        } catch (ValidationException $e) {
-            throw ValidationException::withMessages([
-                'new_password' => 'Лозинка мора садржати минимум 8 карактера, један број и један специјални карактер.',
-            ]);
-        }
-
         // Update password
         $user->setPasswordHash($request->new_password);
         $user->PasswordNeedsChange = false;
         $user->DateUpdated = now();
         $user->save();
+
+        // Log forced password change
+        $this->auditService->logPasswordChange($user->UserID, true);
 
         return redirect('/dashboard')->with('success', 'Лозинка је успешно постављена.');
     }

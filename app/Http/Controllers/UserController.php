@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Sector;
+use App\Rules\StrongPassword;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -91,13 +92,7 @@ class UserController extends Controller
             'FirstName' => 'required|string|max:255',
             'LastName' => 'required|string|max:255',
             'Email' => 'required|email|unique:Users,Email',
-            'Password' => [
-                'required',
-                'string',
-                'min:8',
-                'regex:/[0-9]/', // At least one digit
-                'regex:/[!@#$%^&*()_+\-=\[\]{};:\\\'"|,.<>\/?]/', // At least one special char
-            ],
+            'Password' => ['required', 'string', new StrongPassword()],
             'Role' => 'required|in:SuperAdmin,Admin,Kadrovik,Zaposleni,Rukovodilac',
             'sector_id' => 'nullable|exists:sectors,id',
         ]);

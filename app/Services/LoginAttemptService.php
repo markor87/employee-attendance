@@ -13,6 +13,11 @@ class LoginAttemptService
     const MAX_ATTEMPTS = 5;
 
     /**
+     * Maximum failed attempts per IP address before lockout.
+     */
+    const MAX_IP_ATTEMPTS = 10;
+
+    /**
      * Lockout duration in minutes.
      */
     const LOCKOUT_MINUTES = 15;
@@ -34,19 +39,33 @@ class LoginAttemptService
     }
 
     /**
-     * Check if account is locked out.
+     * Check if account is locked out (by email or IP).
      *
      * @param string $email
+     * @param string|null $ipAddress
      * @return bool
      */
-    public function isLockedOut(string $email): bool
+    public function isLockedOut(string $email, ?string $ipAddress = null): bool
     {
-        $attempts = $this->getRecentAttempts($email);
-        return $attempts >= self::MAX_ATTEMPTS;
+        // Check email-based lockout
+        $emailAttempts = $this->getRecentAttempts($email);
+        if ($emailAttempts >= self::MAX_ATTEMPTS) {
+            return true;
+        }
+
+        // Check IP-based lockout (if IP provided)
+        if ($ipAddress) {
+            $ipAttempts = $this->getRecentIpAttempts($ipAddress);
+            if ($ipAttempts >= self::MAX_IP_ATTEMPTS) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
-     * Get number of recent failed attempts.
+     * Get number of recent failed attempts by email.
      *
      * @param string $email
      * @return int
@@ -57,6 +76,22 @@ class LoginAttemptService
 
         return DB::table('failed_login_attempts')
             ->where('email', strtolower($email))
+            ->where('attempted_at', '>=', $since)
+            ->count();
+    }
+
+    /**
+     * Get number of recent failed attempts by IP address.
+     *
+     * @param string $ipAddress
+     * @return int
+     */
+    public function getRecentIpAttempts(string $ipAddress): int
+    {
+        $since = Carbon::now()->subMinutes(self::LOCKOUT_MINUTES);
+
+        return DB::table('failed_login_attempts')
+            ->where('ip_address', $ipAddress)
             ->where('attempted_at', '>=', $since)
             ->count();
     }
