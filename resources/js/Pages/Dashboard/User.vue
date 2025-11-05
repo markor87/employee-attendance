@@ -94,12 +94,12 @@
             <!-- Secondary Actions (grid of 2) -->
             <div class="grid grid-cols-2 gap-4 mb-8">
                 <!-- My Logs Button -->
-                <a
+                <AppLink
                     :href="`/logs/${user.UserID}`"
                     class="w-full block py-4 text-center text-base font-semibold text-gray-700 bg-white border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50 rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
                 >
                     📋 Моји логови
-                </a>
+                </AppLink>
 
                 <!-- Schedule Absence Button -->
                 <button
@@ -347,8 +347,8 @@ onMounted(async () => {
 
     // Load admin reasons (excludes "Dolazak na posao")
     try {
-        const response = await fetch('/attendance/admin/reasons');
-        const data = await response.json();
+        const response = await window.axios.get('/attendance/admin/reasons');
+        const data = response.data;
         if (data.success) {
             adminReasons.value = data.data || [];
         }
@@ -466,32 +466,13 @@ const submitCheckOut = () => {
 
 const submitScheduleEntry = async (data) => {
     try {
-        const response = await fetch('/attendance/admin/schedule-entry', {
-            method: 'POST',
+        const response = await window.axios.post('/attendance/admin/schedule-entry', data, {
             headers: {
-                'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
             },
-            body: JSON.stringify(data),
         });
 
-        // Check if response is OK before parsing
-        if (!response.ok) {
-            // If 422 (validation error), try to read JSON
-            if (response.status === 422) {
-                const errorData = await response.json();
-                toast.error(errorData.message || 'Валидација није успела.');
-                return;
-            }
-
-            // For other errors, try to read text
-            const errorText = await response.text();
-            console.error('Server error:', errorText);
-            toast.error('Дошло је до грешке на серверу.');
-            return;
-        }
-
-        const result = await response.json();
+        const result = response.data;
 
         if (result.success) {
             toast.success('Ваше одсуство је успешно евидентирано!');
@@ -504,7 +485,12 @@ const submitScheduleEntry = async (data) => {
         }
     } catch (error) {
         console.error('Schedule entry failed:', error);
-        toast.error('Дошло је до грешке приликом евидентирања');
+        // Handle validation errors (422)
+        if (error.response && error.response.status === 422) {
+            toast.error(error.response.data.message || 'Валидација није успела.');
+        } else {
+            toast.error('Дошло је до грешке приликом евидентирања');
+        }
     }
 };
 </script>

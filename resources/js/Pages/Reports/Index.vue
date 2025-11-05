@@ -198,7 +198,7 @@ import { router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import StatsCard from '@/Components/StatsCard.vue';
 import RemoteUsersModal from '@/Components/RemoteUsersModal.vue';
-import { isOfficeIp, isRemoteIp } from '@/Utils/locationHelper';
+import { isOfficeIp, isRemoteIp } from '@/utils/locationHelper';
 
 const props = defineProps({
     user: {
