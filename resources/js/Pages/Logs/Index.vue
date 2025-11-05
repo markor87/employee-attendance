@@ -11,12 +11,12 @@
                         Преглед евиденције радног времена
                     </p>
                 </div>
-                <a
+                <AppLink
                     href="/dashboard"
                     class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                     ← Назад на почетну
-                </a>
+                </AppLink>
             </div>
         </div>
 
@@ -270,8 +270,8 @@ const adminReasons = ref([]);
 // Load admin reasons on mount
 onMounted(async () => {
     try {
-        const response = await fetch('/attendance/admin/reasons');
-        const data = await response.json();
+        const response = await window.axios.get('/attendance/admin/reasons');
+        const data = response.data;
         if (data.success) {
             adminReasons.value = data.data || [];
         }
@@ -424,25 +424,15 @@ const closeEditModal = () => {
 // Handle edit submit
 const handleEditSubmit = async (formData) => {
     try {
-        const response = await fetch(`/attendance/logs/${selectedLog.value.LogID}`, {
-            method: 'PUT',
+        const response = await window.axios.put(`/attendance/logs/${selectedLog.value.LogID}`, formData, {
             headers: {
-                'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Accept': 'application/json',
             },
-            body: JSON.stringify(formData),
         });
 
-        // Check if response is JSON
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-            throw new Error('Server returned non-JSON response');
-        }
+        const result = response.data;
 
-        const result = await response.json();
-
-        if (response.ok && result.success) {
+        if (result.success) {
             toast.success('Лог је успешно ажуриран!');
             closeEditModal();
             // Reload logs
@@ -458,7 +448,17 @@ const handleEditSubmit = async (formData) => {
         }
     } catch (error) {
         console.error('Failed to update log:', error);
-        toast.error('Дошло је до грешке приликом ажурирања лога');
+        if (error.response && error.response.data) {
+            const result = error.response.data;
+            if (result.errors) {
+                const errorMessages = Object.values(result.errors).flat().join(', ');
+                toast.error(errorMessages);
+            } else {
+                toast.error(result.message || 'Грешка при ажурирању лога');
+            }
+        } else {
+            toast.error('Дошло је до грешке приликом ажурирања лога');
+        }
     }
 };
 
@@ -498,14 +498,13 @@ onUnmounted(() => {
 // Handle delete confirm
 const handleDeleteConfirm = async () => {
     try {
-        const response = await fetch(`/attendance/logs/${selectedLog.value.LogID}`, {
-            method: 'DELETE',
+        const response = await window.axios.delete(`/attendance/logs/${selectedLog.value.LogID}`, {
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
             },
         });
 
-        const result = await response.json();
+        const result = response.data;
 
         if (result.success) {
             toast.success('Лог је успешно обрисан!');

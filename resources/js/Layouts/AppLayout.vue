@@ -63,15 +63,15 @@
                                     </div>
 
                                     <!-- Menu Items -->
-                                    <a
+                                    <AppLink
                                         href="/change-password"
                                         class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                                     >
                                         <svg class="h-5 w-5 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1721 9z"></path>
                                         </svg>
                                         Промени лозинку
-                                    </a>
+                                    </AppLink>
 
                                     <div class="border-t border-gray-200 my-1"></div>
 
@@ -109,7 +109,7 @@
                 <aside class="w-full md:w-64 flex-shrink-0">
                     <nav class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 space-y-1">
                         <!-- User Dashboard (for everyone) -->
-                        <a
+                        <AppLink
                             href="/dashboard"
                             :class="[
                                 'flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors',
@@ -122,10 +122,10 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
                             </svg>
                             Почетна
-                        </a>
+                        </AppLink>
 
                         <!-- Admin Dashboard (for Admin/Kadrovik/SuperAdmin/Rukovodilac) -->
-                        <a
+                        <AppLink
                             v-if="user.isAdmin || user.Role === 'Kadrovik' || user.Role === 'Rukovodilac'"
                             href="/admin/dashboard"
                             :class="[
@@ -139,10 +139,10 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                             </svg>
                             Admin Dashboard
-                        </a>
+                        </AppLink>
 
                         <!-- Users (Admin) -->
-                        <a
+                        <AppLink
                             v-if="user.isAdmin"
                             href="/users"
                             :class="[
@@ -156,10 +156,10 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
                             </svg>
                             Корисници
-                        </a>
+                        </AppLink>
 
                         <!-- Reports (Admin/Kadrovik/Rukovodilac) -->
-                        <a
+                        <AppLink
                             v-if="user.isAdmin || user.Role === 'Kadrovik' || user.Role === 'Rukovodilac'"
                             href="/reports"
                             :class="[
@@ -173,10 +173,10 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                             </svg>
                             Извештаји
-                        </a>
+                        </AppLink>
 
                         <!-- Settings (SuperAdmin only) -->
-                        <a
+                        <AppLink
                             v-if="user.Role === 'SuperAdmin'"
                             href="/settings"
                             :class="[
@@ -191,7 +191,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                             </svg>
                             Подешавања
-                        </a>
+                        </AppLink>
                     </nav>
                 </aside>
 
@@ -250,22 +250,17 @@ const logout = () => {
 // Heartbeat check for auto-logout detection
 const checkAuthStatus = async () => {
     try {
-        const response = await fetch('/attendance/status', {
-            method: 'GET',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-            },
-            credentials: 'same-origin',
-        });
-
+        const response = await window.axios.get('/attendance/status');
+        // Axios throws on non-2xx status, so if we get here, user is authenticated
+    } catch (error) {
         // If 401 or 419, user is logged out (session expired)
-        if (response.status === 401 || response.status === 419) {
+        if (error.response && (error.response.status === 401 || error.response.status === 419)) {
             console.log('Session expired detected via heartbeat, redirecting to login...');
             clearInterval(heartbeatInterval);
-            window.location.href = '/login';
+            window.location.href = '/employee-attendance/login';
+        } else {
+            console.error('Heartbeat check error:', error);
         }
-    } catch (error) {
-        console.error('Heartbeat check error:', error);
     }
 };
 

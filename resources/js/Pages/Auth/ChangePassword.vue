@@ -151,12 +151,12 @@
 
                 <!-- Back to Dashboard (only if not required change) -->
                 <div v-if="!requires_change" class="mt-6 text-center border-t pt-6">
-                    <a
+                    <AppLink
                         href="/dashboard"
                         class="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
                     >
                         ← Назад на почетну
-                    </a>
+                    </AppLink>
                 </div>
             </div>
 

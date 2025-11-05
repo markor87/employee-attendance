@@ -162,7 +162,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import StatsCard from '@/Components/StatsCard.vue';
 import UserActionsDropdown from '@/Components/UserActionsDropdown.vue';
 import AdminScheduleEntryModal from '@/Components/AdminScheduleEntryModal.vue';
-import { isOfficeIp, isRemoteIp } from '@/Utils/locationHelper';
+import { isOfficeIp, isRemoteIp } from '@/utils/locationHelper';
 
 const props = defineProps({
     user: {
@@ -231,8 +231,8 @@ const adminReasons = ref([]);
 onMounted(async () => {
     try {
         // Load admin reasons (excludes "Dolazak na posao")
-        const adminReasonsResponse = await fetch('/attendance/admin/reasons');
-        const adminReasonsData = await adminReasonsResponse.json();
+        const adminReasonsResponse = await window.axios.get('/attendance/admin/reasons');
+        const adminReasonsData = adminReasonsResponse.data;
         if (adminReasonsData.success) {
             adminReasons.value = adminReasonsData.data || [];
         }
@@ -347,32 +347,13 @@ const handleScheduleEntry = async (user) => {
 // Submit schedule entry
 const submitScheduleEntry = async (data) => {
     try {
-        const response = await fetch('/attendance/admin/schedule-entry', {
-            method: 'POST',
+        const response = await window.axios.post('/attendance/admin/schedule-entry', data, {
             headers: {
-                'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
             },
-            body: JSON.stringify(data),
         });
 
-        // Check if response is OK before parsing
-        if (!response.ok) {
-            // If 422 (validation error), try to read JSON
-            if (response.status === 422) {
-                const errorData = await response.json();
-                toast.error(errorData.message || 'Валидација није успела.');
-                return;
-            }
-
-            // For other errors, try to read text
-            const errorText = await response.text();
-            console.error('Server error:', errorText);
-            toast.error('Дошло је до грешке на серверу.');
-            return;
-        }
-
-        const result = await response.json();
+        const result = response.data;
 
         if (result.success) {
             toast.success('Одсуство је успешно евидентирано!');
@@ -385,7 +366,12 @@ const submitScheduleEntry = async (data) => {
         }
     } catch (error) {
         console.error('Schedule entry failed:', error);
-        toast.error('Дошло је до грешке приликом евидентирања');
+        // Handle validation errors (422)
+        if (error.response && error.response.status === 422) {
+            toast.error(error.response.data.message || 'Валидација није успела.');
+        } else {
+            toast.error('Дошло је до грешке приликом евидентирања');
+        }
     }
 };
 </script>

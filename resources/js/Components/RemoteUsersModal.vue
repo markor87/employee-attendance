@@ -95,7 +95,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { isRemoteIp } from '@/Utils/locationHelper';
+import { isRemoteIp } from '@/utils/locationHelper';
 
 const props = defineProps({
     // No longer need users prop - will fetch from API
@@ -109,8 +109,8 @@ const users = ref([]);
 // Fetch remote users from API
 onMounted(async () => {
     try {
-        const response = await fetch('/api/reports/remote-users');
-        const data = await response.json();
+        const response = await window.axios.get('/api/reports/remote-users');
+        const data = response.data;
 
         if (data.success) {
             users.value = data.data || [];

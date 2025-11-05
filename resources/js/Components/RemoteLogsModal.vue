@@ -116,7 +116,7 @@
 
 <script setup>
 import { computed } from 'vue';
-import { isRemoteIp, getLocationFromIp } from '@/Utils/locationHelper';
+import { isRemoteIp, getLocationFromIp } from '@/utils/locationHelper';
 
 const props = defineProps({
     logs: {

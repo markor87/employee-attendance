@@ -6,15 +6,29 @@ import { createInertiaApp, router } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import Toast from 'vue-toastification';
 import 'vue-toastification/dist/index.css';
+import AppLink from '@/Components/AppLink.vue';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Employee Attendance';
+
+// Subfolder base path configuration
+const basePath = '/employee-attendance';
+
+// Inertia router interceptor for subfolder deployment
+// Automatically prepends base path to all Inertia requests
+router.on('start', ({ detail: { visit } }) => {
+    const path = visit.url.pathname;
+    // Only prepend if path doesn't already start with basePath
+    if (path.startsWith('/') && !path.startsWith(basePath)) {
+        visit.url.pathname = basePath + path;
+    }
+});
 
 // Inertia error interceptor for auto-logout redirect
 router.on('error', (event) => {
     // Check if error is 401 (Unauthenticated) or 419 (CSRF token mismatch/session expired)
     if (event.detail?.response?.status === 401 || event.detail?.response?.status === 419) {
         // Redirect to login page
-        window.location.href = '/login';
+        window.location.href = basePath + '/login';
     }
 });
 
@@ -38,6 +52,7 @@ createInertiaApp({
                 icon: true,
                 rtl: false,
             })
+            .component('AppLink', AppLink)
             .mount(el);
     },
     progress: {
