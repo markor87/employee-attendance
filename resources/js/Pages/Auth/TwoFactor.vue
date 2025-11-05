@@ -160,33 +160,47 @@ const submitVerification = async () => {
             },
         });
 
-        const data = response.data;
-        console.log('Response data:', data);
+        console.log('Response status:', response.status);
+        console.log('Response data:', response.data);
 
-        console.log('Verification successful! Redirecting to:', data.redirect);
-        toast.success('Верификација успешна!');
-        router.visit(data.redirect);
+        // Axios automatically parses JSON
+        const data = response.data;
+
+        if (data.success) {
+            console.log('Verification successful! Redirecting to:', data.redirect);
+            toast.success('Верификација успешна!');
+            router.visit(data.redirect);
+        } else {
+            console.error('Verification failed:', data);
+            if (data.error) {
+                toast.error(data.error);
+            } else {
+                toast.error('Дошло је до грешке приликом верификације.');
+            }
+            loading.value = false;
+        }
     } catch (error) {
         console.error('=== VERIFICATION EXCEPTION ===');
         console.error('Error type:', error.constructor.name);
         console.error('Error message:', error.message);
-        console.error('Full error object:', error);
 
+        // Handle axios error response
         if (error.response) {
             console.error('Response status:', error.response.status);
-            const data = error.response.data;
+            console.error('Response data:', error.response.data);
 
-            if (data.errors) {
-                console.error('Validation errors:', data.errors);
-                errors.value = data.errors;
-            } else if (data.error) {
-                console.error('Error message:', data.error);
-                toast.error(data.error);
+            if (error.response.data?.errors) {
+                errors.value = error.response.data.errors;
+                if (error.response.data.errors.code) {
+                    toast.error(error.response.data.errors.code[0]);
+                }
+            } else if (error.response.data?.error) {
+                toast.error(error.response.data.error);
             } else {
-                console.error('Unknown error format:', data);
                 toast.error('Дошло је до грешке приликом верификације.');
             }
         } else {
+            console.error('Error stack:', error.stack);
             toast.error('Дошло је до грешке приликом верификације.');
         }
         loading.value = false;
