@@ -26,6 +26,18 @@ if (basePath !== '/') {
     });
 }
 
+// Update CSRF meta tag after each Inertia navigation
+// This ensures the CSRF token stays fresh and prevents 419 errors
+router.on('success', (event) => {
+    const page = event.detail.page;
+    if (page.props && page.props.csrf_token) {
+        const meta = document.querySelector('meta[name="csrf-token"]');
+        if (meta) {
+            meta.content = page.props.csrf_token;
+        }
+    }
+});
+
 // Inertia error interceptor for auto-logout redirect
 router.on('error', (event) => {
     // Check if error is 401 (Unauthenticated) or 419 (CSRF token mismatch/session expired)

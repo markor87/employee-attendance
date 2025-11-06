@@ -13,11 +13,14 @@ if (token) {
 }
 
 // Add axios request interceptor to ensure CSRF token is always fresh
-// This handles cases where the token might not be available at initial load
+// The meta tag is updated by app.js after each Inertia navigation,
+// so this will always read the latest CSRF token from the server
 window.axios.interceptors.request.use(function (config) {
     const token = document.head.querySelector('meta[name="csrf-token"]');
     if (token) {
         config.headers['X-CSRF-TOKEN'] = token.content;
+    } else {
+        console.warn('CSRF token not found in meta tag at request time');
     }
     return config;
 }, function (error) {
