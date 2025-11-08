@@ -201,6 +201,14 @@
                 </main>
             </div>
         </div>
+
+        <!-- Overtime Prompt Modal -->
+        <OvertimePromptModal
+            :show="showOvertimePrompt"
+            :message="overtimeMessage"
+            :formatted-time="formatTimeRemaining()"
+            @confirm="confirmPresence"
+        />
     </div>
 </template>
 
@@ -209,6 +217,9 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { useToast } from 'vue-toastification';
 import { getRoleLabel, getRoleBadgeClass } from '@/utils/roleMapping';
+import { useOvertimeCheck } from '@/composables/useOvertimeCheck';
+import OvertimePromptModal from '@/Components/OvertimePromptModal.vue';
+import AppLink from '@/Components/AppLink.vue';
 
 const props = defineProps({
     user: {
@@ -225,6 +236,14 @@ const toast = useToast();
 const showUserMenu = ref(false);
 const showMobileMenu = ref(false);
 let heartbeatInterval = null;
+
+// Overtime presence check
+const {
+    showOvertimePrompt,
+    overtimeMessage,
+    formatTimeRemaining,
+    confirmPresence
+} = useOvertimeCheck();
 
 const userInitials = computed(() => {
     const first = props.user.FirstName?.[0] || '';

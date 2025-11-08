@@ -56,6 +56,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/attendance/reasons', [AttendanceController::class, 'getReasons'])->name('attendance.reasons');
     Route::get('/attendance/admin/reasons', [AttendanceController::class, 'getAdminReasons'])->name('attendance.admin.reasons');
 
+    // Overtime presence check
+    Route::get('/attendance/overtime/check', [AttendanceController::class, 'checkOvertimeStatus'])->name('attendance.overtime.check');
+    Route::post('/attendance/overtime/confirm', [AttendanceController::class, 'confirmOvertimePresence'])->name('attendance.overtime.confirm');
+    Route::post('/attendance/overtime/auto-checkout', [AttendanceController::class, 'autoCheckoutOvertime'])->name('attendance.overtime.auto-checkout');
+
     // Log management (delete and update)
     Route::delete('/attendance/logs/{logId}', [AttendanceController::class, 'deleteLog'])->name('attendance.logs.delete');
     Route::put('/attendance/logs/{logId}', [AttendanceController::class, 'updateLog'])->name('attendance.logs.update');

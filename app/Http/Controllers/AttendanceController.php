@@ -599,4 +599,180 @@ class AttendanceController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Check if user needs overtime presence confirmation prompt.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function checkOvertimeStatus(Request $request)
+    {
+        $user = Auth::user();
+
+        // If not checked in, return success
+        if ($user->Status !== 'Prijavljen') {
+            return response()->json([
+                'needs_prompt' => false,
+                'is_checked_in' => false,
+            ]);
+        }
+
+        // Find active session
+        $activeLog = TimeLog::where('UserID', $user->UserID)
+            ->whereNull('VremeOdjave')
+            ->latest('VremePrijave')
+            ->first();
+
+        if (! $activeLog) {
+            return response()->json([
+                'needs_prompt' => false,
+                'is_checked_in' => false,
+            ]);
+        }
+
+        // Get overtime check time from settings (default 15:30)
+        $overtimeCheckTime = DB::table('Settings')
+            ->where('SettingKey', 'overtime_check_time')
+            ->value('SettingValue') ?? '15:30';
+
+        $currentTime = now();
+        $checkTime = Carbon::parse($currentTime->format('Y-m-d').' '.$overtimeCheckTime);
+
+        // If it's not yet time for check
+        if ($currentTime->lt($checkTime)) {
+            return response()->json([
+                'needs_prompt' => false,
+                'is_checked_in' => true,
+                'next_check_at' => $checkTime->toIso8601String(),
+            ]);
+        }
+
+        // Check if today is a working day
+        $workingDays = explode(',', DB::table('Settings')
+            ->where('SettingKey', 'overtime_working_days')
+            ->value('SettingValue') ?? 'Mon,Tue,Wed,Thu,Fri');
+
+        if (! in_array($currentTime->format('D'), $workingDays)) {
+            return response()->json([
+                'needs_prompt' => false,
+                'is_checked_in' => true,
+                'reason' => 'not_working_day',
+            ]);
+        }
+
+        // Get prompt interval (default 15 minutes)
+        $promptInterval = (int) (DB::table('Settings')
+            ->where('SettingKey', 'overtime_prompt_interval')
+            ->value('SettingValue') ?? 15);
+
+        $lastPromptAt = $user->overtime_prompt_shown_at ? Carbon::parse($user->overtime_prompt_shown_at) : null;
+
+        // If prompt was shown and interval hasn't passed yet
+        if ($lastPromptAt && $currentTime->diffInMinutes($lastPromptAt) < $promptInterval) {
+            return response()->json([
+                'needs_prompt' => false,
+                'is_checked_in' => true,
+                'next_prompt_at' => $lastPromptAt->addMinutes($promptInterval)->toIso8601String(),
+            ]);
+        }
+
+        // NEEDS PROMPT
+        $promptTimeout = (int) (DB::table('Settings')
+            ->where('SettingKey', 'overtime_prompt_timeout')
+            ->value('SettingValue') ?? 10);
+
+        return response()->json([
+            'needs_prompt' => true,
+            'is_checked_in' => true,
+            'prompt_timeout' => $promptTimeout,
+            'message' => 'Прошло је радно време. Да ли сте и даље на послу?',
+        ]);
+    }
+
+    /**
+     * User confirms overtime presence.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function confirmOvertimePresence(Request $request)
+    {
+        $user = Auth::user();
+
+        // Update last activity and prompt shown timestamp
+        $user->last_activity_at = now();
+        $user->overtime_prompt_shown_at = now();
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Хвала на потврди. Наставите са радом.',
+        ]);
+    }
+
+    /**
+     * Auto checkout user if they don't respond to overtime prompt.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function autoCheckoutOvertime(Request $request)
+    {
+        $user = Auth::user();
+
+        // Check if user is checked in
+        if ($user->Status !== 'Prijavljen') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Корисник није пријављен.',
+            ], 400);
+        }
+
+        // Find active session
+        $timeLog = TimeLog::where('UserID', $user->UserID)
+            ->whereNull('VremeOdjave')
+            ->latest('VremePrijave')
+            ->first();
+
+        if (! $timeLog) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Није пронађена активна сесија.',
+            ], 404);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            // Auto checkout user
+            $timeLog->update([
+                'VremeOdjave' => now(),
+                'RazlogOdjave' => 'Аутоматска одјава (одсуство одговора на присуство)',
+                'IpAdresaOdjave' => $request->ip() ?: 'N/A',
+                'PerformedByOdjava' => $user->UserID,
+                'overtime_auto_checkout' => true,
+                'overtime_notes' => 'Корисник није одговорио на упит о присуству након истека времена.',
+            ]);
+
+            // Update user status
+            $user->update(['Status' => 'Odjavljen']);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Аутоматски одјављени због непотврде присуства.',
+                'redirect' => route('login'),
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Грешка приликом аутоматске одјаве.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }

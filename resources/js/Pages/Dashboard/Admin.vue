@@ -347,11 +347,7 @@ const handleScheduleEntry = async (user) => {
 // Submit schedule entry
 const submitScheduleEntry = async (data) => {
     try {
-        const response = await window.axios.post('/attendance/admin/schedule-entry', data, {
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            },
-        });
+        const response = await window.axios.post('/attendance/admin/schedule-entry', data);
 
         const result = response.data;
 
@@ -366,9 +362,15 @@ const submitScheduleEntry = async (data) => {
         }
     } catch (error) {
         console.error('Schedule entry failed:', error);
+        console.error('Error response data:', error.response?.data);
+
         // Handle validation errors (422)
         if (error.response && error.response.status === 422) {
             toast.error(error.response.data.message || 'Валидација није успела.');
+        } else if (error.response && error.response.data) {
+            // Show server error message if available
+            const errorMsg = error.response.data.error || error.response.data.message || 'Дошло је до грешке приликом евидентирања';
+            toast.error(errorMsg);
         } else {
             toast.error('Дошло је до грешке приликом евидентирања');
         }
