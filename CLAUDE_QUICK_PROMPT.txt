@@ -1,0 +1,37 @@
+PROBLEM: Overtime modal se prikazuje prvi put, ali kada korisnik klikne "Da, i dalje sam na poslu", modal se NIKADA više ne prikazuje iako je overtime_prompt_interval postavljen na 2 minuta. Takođe, u browser console-u se NE POJAVLJUJE NIJEDAN LOG od useOvertimeCheck composable-a.
+
+ZADATAK:
+
+1. Proveri da li se useOvertimeCheck composable KORISTI u resources/js/Pages/User/Index.vue
+   - Ako NE, implementiraj ga (import + koristi u setup + dodaj modal u template)
+
+2. Proveri da li postoje overtime rute u routes/web.php:
+   - GET /attendance/overtime/check
+   - POST /attendance/overtime/confirm
+   - POST /attendance/overtime/auto-checkout
+
+3. Proveri Settings u bazi (php artisan tinker):
+   - overtime_prompt_interval treba biti "2"
+   - overtime_prompt_timeout treba biti "2"
+
+4. Napravi test skript koji direktno testira logiku (bez web requestova)
+
+5. Dodaj temporary console.log na početak onMounted u useOvertimeCheck.js da potvrdiš da se composable izvršava
+
+6. Pokreni npm run build i proveri da nema grešaka
+
+7. Testiraj:
+   - Otvori F12 Console
+   - Prijavi se
+   - Gledaj Network tab - da li se poziva /attendance/overtime/check?
+   - Gledaj Console - da li ima logova?
+   - Proveri storage/logs/laravel.log - da li ima overtime logova?
+
+8. Ako i dalje ne radi, napravi test button koji direktno setuje showOvertimePrompt.value = true da vidimo da li je problem u modal rendering-u ili API logici
+
+OČEKIVANI REZULTAT:
+- Console log na svakih 60s sa overtime check response
+- Modal se pojavljuje ponovo nakon 2 minuta od klika na "Da"
+- Laravel log ima zapise "Overtime check: interval not passed" i "Overtime presence confirmed"
+
+Detaljne instrukcije su u CLAUDE_PROMPT.md fajlu.
