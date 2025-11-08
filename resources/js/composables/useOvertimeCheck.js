@@ -97,7 +97,17 @@ export function useOvertimeCheck() {
             const response = await window.axios.get('/attendance/overtime/check');
             const data = response.data;
 
+            console.log('Overtime check response:', {
+                needs_prompt: data.needs_prompt,
+                is_checked_in: data.is_checked_in,
+                showOvertimePrompt_current: showOvertimePrompt.value,
+                debug_info: data.debug_info,
+                minutes_passed: data.minutes_passed,
+                interval_required: data.interval_required,
+            });
+
             if (data.needs_prompt && !showOvertimePrompt.value) {
+                console.log('Prikazujem overtime modal');
                 // Prikaži prompt
                 showOvertimePrompt.value = true;
                 overtimeMessage.value = data.message;
@@ -114,6 +124,13 @@ export function useOvertimeCheck() {
                 promptTimer = setTimeout(() => {
                     autoCheckout();
                 }, data.prompt_timeout * 60 * 1000); // minuta → milisekunde
+            } else if (data.needs_prompt && showOvertimePrompt.value) {
+                console.log('Modal je već prikazan, ne prikazujem ponovo');
+            } else if (!data.needs_prompt) {
+                console.log('Modal nije potreban', {
+                    reason: data.reason || 'interval not passed',
+                    next_prompt_at: data.next_prompt_at,
+                });
             }
         } catch (error) {
             console.error('Overtime check error:', error);
@@ -141,8 +158,10 @@ export function useOvertimeCheck() {
     // Korisnik potvrđuje prisustvo
     const confirmPresence = async () => {
         try {
+            console.log('Potvrđujem prisustvo...');
             await window.axios.post('/attendance/overtime/confirm');
 
+            console.log('Prisustvo potvrđeno, zatvaram modal');
             // Zatvori prompt
             showOvertimePrompt.value = false;
 

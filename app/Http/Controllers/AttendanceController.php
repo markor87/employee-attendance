@@ -670,10 +670,20 @@ class AttendanceController extends Controller
 
         // If prompt was shown and interval hasn't passed yet
         if ($lastPromptAt && $currentTime->diffInMinutes($lastPromptAt) < $promptInterval) {
+            $minutesPassed = $currentTime->diffInMinutes($lastPromptAt);
+            \Log::info('Overtime check: interval not passed', [
+                'user_id' => $user->UserID,
+                'current_time' => $currentTime->toDateTimeString(),
+                'last_prompt_at' => $lastPromptAt->toDateTimeString(),
+                'minutes_passed' => $minutesPassed,
+                'prompt_interval' => $promptInterval,
+            ]);
             return response()->json([
                 'needs_prompt' => false,
                 'is_checked_in' => true,
-                'next_prompt_at' => $lastPromptAt->addMinutes($promptInterval)->toIso8601String(),
+                'next_prompt_at' => $lastPromptAt->copy()->addMinutes($promptInterval)->toIso8601String(),
+                'minutes_passed' => $minutesPassed,
+                'interval_required' => $promptInterval,
             ]);
         }
 
@@ -682,11 +692,26 @@ class AttendanceController extends Controller
             ->where('SettingKey', 'overtime_prompt_timeout')
             ->value('SettingValue') ?? 10);
 
+        $minutesPassed = $lastPromptAt ? $currentTime->diffInMinutes($lastPromptAt) : null;
+        \Log::info('Overtime check: showing prompt', [
+            'user_id' => $user->UserID,
+            'current_time' => $currentTime->toDateTimeString(),
+            'last_prompt_at' => $lastPromptAt ? $lastPromptAt->toDateTimeString() : 'never',
+            'minutes_passed' => $minutesPassed,
+            'prompt_interval' => $promptInterval,
+            'prompt_timeout' => $promptTimeout,
+        ]);
+
         return response()->json([
             'needs_prompt' => true,
             'is_checked_in' => true,
             'prompt_timeout' => $promptTimeout,
             'message' => 'Прошло је радно време. Да ли сте и даље на послу?',
+            'debug_info' => [
+                'minutes_passed' => $minutesPassed,
+                'interval_required' => $promptInterval,
+                'last_prompt_at' => $lastPromptAt ? $lastPromptAt->toIso8601String() : null,
+            ],
         ]);
     }
 
@@ -700,10 +725,17 @@ class AttendanceController extends Controller
     {
         $user = Auth::user();
 
+        $timestamp = now();
+
         // Update last activity and prompt shown timestamp
-        $user->last_activity_at = now();
-        $user->overtime_prompt_shown_at = now();
+        $user->last_activity_at = $timestamp;
+        $user->overtime_prompt_shown_at = $timestamp;
         $user->save();
+
+        \Log::info('Overtime presence confirmed', [
+            'user_id' => $user->UserID,
+            'timestamp' => $timestamp->toDateTimeString(),
+        ]);
 
         return response()->json([
             'success' => true,
