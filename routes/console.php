@@ -11,8 +11,5 @@ Artisan::command('inspire', function () {
 // Schedule auto-logout command to run every minute
 Schedule::command('users:auto-logout')->everyMinute();
 
-// Schedule overtime auto-logout to run every minute
-Schedule::command('users:auto-logout-overtime')->everyMinute();
-
 // Schedule reminder emails to run every minute
 Schedule::command('emails:send-reminders')->everyMinute();
