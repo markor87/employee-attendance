@@ -12,62 +12,15 @@ export function useOvertimeCheck() {
     let countdownInterval = null;
     let flashInterval = null;
 
-    // Originalni naslov i favicon
+    // Originalni naslov
     let originalTitle = document.title;
-    let originalFavicon = null;
 
-    // Pronađi favicon link element
-    const getFaviconElement = () => {
-        return document.querySelector('link[rel="icon"]') ||
-               document.querySelector('link[rel="shortcut icon"]');
-    };
-
-    // Zapamti originalni favicon
-    const saveOriginalFavicon = () => {
-        const faviconElement = getFaviconElement();
-        if (faviconElement) {
-            originalFavicon = faviconElement.href;
-        }
-    };
-
-    // Kreiraj alert favicon (crveni)
-    const createAlertFavicon = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = 32;
-        canvas.height = 32;
-        const ctx = canvas.getContext('2d');
-
-        // Crveni krug
-        ctx.fillStyle = '#DC2626';
-        ctx.beginPath();
-        ctx.arc(16, 16, 16, 0, 2 * Math.PI);
-        ctx.fill();
-
-        // Beli uzvičnik
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = 'bold 20px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('!', 16, 16);
-
-        return canvas.toDataURL();
-    };
-
-    // Pokreni favicon/title flashing
+    // Pokreni title flashing
     const startFlashing = () => {
-        saveOriginalFavicon();
-        const alertFavicon = createAlertFavicon();
-        const faviconElement = getFaviconElement();
-
         let isAlert = false;
 
         flashInterval = setInterval(() => {
             isAlert = !isAlert;
-
-            // Promeni favicon
-            if (faviconElement) {
-                faviconElement.href = isAlert ? alertFavicon : originalFavicon;
-            }
 
             // Promeni naslov
             document.title = isAlert ? '⚠️ ПОТВРДИТЕ ПРИСУСТВО!' : originalTitle;
@@ -83,12 +36,6 @@ export function useOvertimeCheck() {
 
         // Vrati originalni naslov
         document.title = originalTitle;
-
-        // Vrati originalni favicon
-        const faviconElement = getFaviconElement();
-        if (faviconElement && originalFavicon) {
-            faviconElement.href = originalFavicon;
-        }
     };
 
     // Proveri overtime status svakih 60 sekundi
@@ -104,7 +51,7 @@ export function useOvertimeCheck() {
                 promptTimeout.value = data.prompt_timeout;
                 timeRemaining.value = data.prompt_timeout * 60; // konvertuj u sekunde
 
-                // Pokreni favicon/title flashing
+                // Pokreni title flashing
                 startFlashing();
 
                 // Pokreni countdown
