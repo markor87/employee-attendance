@@ -1,7 +1,6 @@
 <template>
     <Teleport to="body">
-        <Transition name="modal">
-            <div v-if="show" class="fixed inset-0 z-[9999] overflow-y-auto">
+        <div v-if="show" class="fixed inset-0 z-[9999] overflow-y-auto">
                 <!-- Overlay -->
                 <div class="fixed inset-0 bg-black/60 backdrop-blur-sm"></div>
 
@@ -58,7 +57,6 @@
                     </div>
                 </div>
             </div>
-        </Transition>
     </Teleport>
 </template>
 

@@ -669,8 +669,8 @@ class AttendanceController extends Controller
         $lastPromptAt = $user->overtime_prompt_shown_at ? Carbon::parse($user->overtime_prompt_shown_at) : null;
 
         // If prompt was shown and interval hasn't passed yet
-        if ($lastPromptAt && $currentTime->diffInMinutes($lastPromptAt) < $promptInterval) {
-            $minutesPassed = $currentTime->diffInMinutes($lastPromptAt);
+        if ($lastPromptAt && $lastPromptAt->diffInMinutes($currentTime) < $promptInterval) {
+            $minutesPassed = $lastPromptAt->diffInMinutes($currentTime);
             \Log::info('Overtime check: interval not passed', [
                 'user_id' => $user->UserID,
                 'current_time' => $currentTime->toDateTimeString(),
@@ -692,7 +692,7 @@ class AttendanceController extends Controller
             ->where('SettingKey', 'overtime_prompt_timeout')
             ->value('SettingValue') ?? 10);
 
-        $minutesPassed = $lastPromptAt ? $currentTime->diffInMinutes($lastPromptAt) : null;
+        $minutesPassed = $lastPromptAt ? $lastPromptAt->diffInMinutes($currentTime) : null;
         \Log::info('Overtime check: showing prompt', [
             'user_id' => $user->UserID,
             'current_time' => $currentTime->toDateTimeString(),
