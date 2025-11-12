@@ -243,7 +243,7 @@ class AttendanceService
      * @param int $perPage
      * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
-    public function getUserTimeLogs(int $userId, array $filters = [], int $perPage = 15)
+    public function getUserTimeLogs(int $userId, array $filters = [], int $perPage = 10)
     {
         $query = TimeLog::forUser($userId);
 

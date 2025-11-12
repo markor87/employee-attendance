@@ -55,8 +55,8 @@ class LogsController extends Controller
             $query->where('VremePrijave', '<=', $endDate);
         }
 
-        // Pagination (15 per page)
-        $logs = $query->paginate(15);
+        // Pagination (10 per page)
+        $logs = $query->paginate(10);
 
         // Calculate statistics for filtered logs
         $statsQuery = TimeLog::where('UserID', $userId)->completed();
