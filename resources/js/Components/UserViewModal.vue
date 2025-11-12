@@ -206,26 +206,15 @@ const getStatusLabel = (status) => {
 // Fetch user data
 onMounted(async () => {
     try {
-        const response = await fetch(`/users/${props.userId}`, {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json',
-            },
-        });
+        const response = await window.axios.get(`/users/${props.userId}`);
 
-        if (!response.ok) {
-            throw new Error('Грешка при учитавању података о кориснику');
-        }
-
-        const data = await response.json();
-
-        if (data.success) {
-            userData.value = data.user;
+        if (response.data.success) {
+            userData.value = response.data.user;
         } else {
             error.value = 'Грешка при учитавању података';
         }
     } catch (err) {
-        error.value = err.message || 'Грешка при учитавању података';
+        error.value = err.response?.data?.message || 'Грешка при учитавању података о кориснику';
     } finally {
         loading.value = false;
     }
