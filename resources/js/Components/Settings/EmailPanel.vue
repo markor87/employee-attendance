@@ -85,7 +85,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { useToast } from 'vue-toastification';
 
@@ -99,6 +99,12 @@ const props = defineProps({
 const toast = useToast();
 const testing = ref(false);
 const testEmail = ref('');
+const localSettings = ref({ ...props.settings });
+
+// Watch for props changes and sync localSettings
+watch(() => props.settings, (newSettings) => {
+    localSettings.value = { ...newSettings };
+}, { deep: true });
 
 const sendTestEmail = () => {
     testing.value = true;

@@ -93,7 +93,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { useToast } from 'vue-toastification';
 
@@ -107,6 +107,11 @@ const props = defineProps({
 const toast = useToast();
 const saving = ref(false);
 const localSettings = ref({ ...props.settings });
+
+// Watch for props changes and sync localSettings
+watch(() => props.settings, (newSettings) => {
+    localSettings.value = { ...newSettings };
+}, { deep: true });
 
 // Extract HH:MM from HH:MM:SS
 const logoutTime = computed({

@@ -728,7 +728,6 @@ class AttendanceController extends Controller
         $timestamp = now();
 
         // Update last activity and prompt shown timestamp
-        $user->last_activity_at = $timestamp;
         $user->overtime_prompt_shown_at = $timestamp;
         $user->save();
 

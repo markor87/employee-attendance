@@ -66,28 +66,17 @@ class AutoLogoutUsers extends Command
             return 1;
         }
 
-        // Get all authenticated users from sessions table
-        $authenticatedUserIds = DB::table('sessions')
-            ->whereNotNull('user_id')
-            ->distinct()
-            ->pluck('user_id');
+        // Get all users who are currently checked in at work
+        $usersToLogout = User::where('Status', 'Prijavljen')->get();
 
-        if ($authenticatedUserIds->isEmpty()) {
-            $this->info('No authenticated users found.');
-            return 0;
-        }
-
-        // Get User models for these authenticated users
-        $authenticatedUsers = User::whereIn('UserID', $authenticatedUserIds)->get();
-
-        if ($authenticatedUsers->isEmpty()) {
-            $this->info('No users to logout.');
+        if ($usersToLogout->isEmpty()) {
+            $this->info('No checked-in users to logout.');
             return 0;
         }
 
         $loggedOutCount = 0;
 
-        foreach ($authenticatedUsers as $user) {
+        foreach ($usersToLogout as $user) {
             try {
                 Log::info("Auto-logout: Processing user {$user->UserID} ({$user->FirstName} {$user->LastName}), current status: {$user->Status}");
 
@@ -139,7 +128,7 @@ class AutoLogoutUsers extends Command
         }
 
         $this->info("Auto-logout completed. Logged out $loggedOutCount users.");
-        Log::info("Auto-logout: $loggedOutCount authenticated users logged out at $currentTime");
+        Log::info("Auto-logout: $loggedOutCount checked-in users logged out at $currentTime");
 
         return 0;
     }
