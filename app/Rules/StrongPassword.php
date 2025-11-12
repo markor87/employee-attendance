@@ -39,7 +39,7 @@ class StrongPassword implements ValidationRule
         }
 
         // Must contain at least one special character
-        if (!preg_match('/[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\\/;~`]/', $value)) {
+        if (!preg_match('~[!@#\$%^&*(),.?":{}|<>_\-+=\[\]\\/;]~', $value)) {
             $fail('Лозинка мора садржати најмање један специјални карактер (!@#$%^&*...).');
             return;
         }

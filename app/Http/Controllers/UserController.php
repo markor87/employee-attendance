@@ -133,9 +133,7 @@ class UserController extends Controller
             'Password' => [
                 'nullable',
                 'string',
-                'min:8',
-                'regex:/[0-9]/',
-                'regex:/[!@#$%^&*()_+\-=\[\]{};:\\\'"|,.<>\/?]/',
+                new StrongPassword(),
             ],
             'Role' => 'required|in:SuperAdmin,Admin,Kadrovik,Zaposleni,Rukovodilac',
             'sector_id' => 'nullable|exists:sectors,id',
