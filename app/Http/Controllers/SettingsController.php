@@ -38,6 +38,13 @@ class SettingsController extends Controller
             'ReminderEnabled' => Setting::getBool('ReminderEnabled', false),
             'ReminderCheckInTime' => Setting::get('ReminderCheckInTime', '07:25:00'),
             'ReminderCheckOutTime' => Setting::get('ReminderCheckOutTime', '15:25:00'),
+
+            // Overtime
+            'overtime_enabled' => Setting::getBool('overtime_enabled', true),
+            'overtime_check_time' => Setting::get('overtime_check_time', '15:30:00'),
+            'overtime_prompt_interval' => Setting::get('overtime_prompt_interval', '15'),
+            'overtime_prompt_timeout' => Setting::get('overtime_prompt_timeout', '10'),
+            'overtime_working_days' => Setting::get('overtime_working_days', 'Mon,Tue,Wed,Thu,Fri'),
         ];
 
         return Inertia::render('Settings/Index', [
@@ -62,6 +69,11 @@ class SettingsController extends Controller
             'ReminderEnabled' => 'sometimes|boolean',
             'ReminderCheckInTime' => 'sometimes|string|regex:/^\d{2}:\d{2}:\d{2}$/',
             'ReminderCheckOutTime' => 'sometimes|string|regex:/^\d{2}:\d{2}:\d{2}$/',
+            'overtime_enabled' => 'sometimes|boolean',
+            'overtime_check_time' => 'sometimes|string|regex:/^\d{2}:\d{2}:\d{2}$/',
+            'overtime_prompt_interval' => 'sometimes|integer|min:1|max:120',
+            'overtime_prompt_timeout' => 'sometimes|integer|min:1|max:60',
+            'overtime_working_days' => 'sometimes|string',
         ]);
 
         // Update each setting

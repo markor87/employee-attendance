@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\TimeLog;
 use App\Models\Reason;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -609,6 +610,15 @@ class AttendanceController extends Controller
     public function checkOvertimeStatus(Request $request)
     {
         $user = Auth::user();
+
+        // Check if overtime feature is enabled
+        $overtimeEnabled = Setting::getBool('overtime_enabled', true);
+        if (!$overtimeEnabled) {
+            return response()->json([
+                'needs_prompt' => false,
+                'overtime_disabled' => true,
+            ]);
+        }
 
         // If not checked in, return success
         if ($user->Status !== 'Prijavljen') {

@@ -52,6 +52,7 @@ import SecurityPanel from '@/Components/Settings/SecurityPanel.vue';
 import AutoLogoutPanel from '@/Components/Settings/AutoLogoutPanel.vue';
 import EmailPanel from '@/Components/Settings/EmailPanel.vue';
 import ReminderPanel from '@/Components/Settings/ReminderPanel.vue';
+import OvertimePanel from '@/Components/Settings/OvertimePanel.vue';
 
 const props = defineProps({
     settings: {
@@ -76,6 +77,12 @@ const sections = [
         label: 'Аутоматски Logout',
         icon: '⏰',
         component: AutoLogoutPanel,
+    },
+    {
+        id: 'overtime',
+        label: 'Overtime',
+        icon: '⏱️',
+        component: OvertimePanel,
     },
     {
         id: 'email',

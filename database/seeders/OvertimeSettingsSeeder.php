@@ -14,6 +14,10 @@ class OvertimeSettingsSeeder extends Seeder
     {
         $settings = [
             [
+                'SettingKey' => 'overtime_enabled',
+                'SettingValue' => 'true',
+            ],
+            [
                 'SettingKey' => 'overtime_check_time',
                 'SettingValue' => '15:30',
             ],
